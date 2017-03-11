@@ -255,6 +255,10 @@ int main(const int argc, const char* argv[]) {
 	// MATRIX 4X4'S
 	
 	
+
+	glm::mat4 eyeToHead[numEyes] = { glm::mat4(1.0f) };
+	glm::mat4 projectionMatrix[numEyes] = { glm::mat4(1.0f) };
+	glm::mat4 headToBodyMatrix = glm::mat4(1.0f);
 	
 
     // Main loop
@@ -265,13 +269,7 @@ int main(const int argc, const char* argv[]) {
         const float nearPlaneZ = -0.1f;
         const float farPlaneZ = -100.0f;
         const float verticalFieldOfView = 45.0f * pi / 180.0f;
-		glm::mat4& bodyToWorldMatrix = glm::mat4();
-		glm::mat4& headToWorldMatrix = glm::mat4();
-		glm::mat4& objectToWorldMatrix = glm::mat4();
-
-		glm::mat4 eyeToHead[numEyes] = { glm::mat4() };
-		glm::mat4 projectionMatrix[numEyes] = { glm::mat4() };
-		glm::mat4 headToBodyMatrix = glm::mat4();
+		
 
 #       ifdef _VR
             getEyeTransformations(hmd, trackedDevicePose, nearPlaneZ, farPlaneZ, headToBodyMatrix.data, eyeToHead[0].data, eyeToHead[1].data, projectionMatrix[0].data, projectionMatrix[1].data);
@@ -280,6 +278,11 @@ int main(const int argc, const char* argv[]) {
 #       endif
 
         // printf("float nearPlaneZ = %f, farPlaneZ = %f; int width = %d, height = %d;\n", nearPlaneZ, farPlaneZ, framebufferWidth, framebufferHeight);
+
+		glm::mat4& bodyToWorldMatrix = glm::mat4(1.0f);
+		glm::mat4& headToWorldMatrix = glm::mat4(1.0f);
+		glm::mat4& objectToWorldMatrix = glm::mat4(1.0f);
+
 
 		bodyToWorldMatrix = //view
             glm::translate(bodyToWorldMatrix, bodyTranslation) *
@@ -296,14 +299,14 @@ int main(const int argc, const char* argv[]) {
             glClearColor(0.1f, 0.2f, 0.3f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			objectToWorldMatrix = glm::translate(objectToWorldMatrix, glm::vec3(0.0f, 0.5f, 0.0f)) * glm::rotate(objectToWorldMatrix, pi / 3.0f, glm::vec3(0, 1, 0));
-            const glm::mat3& objectToWorldNormalMatrix = glm::inverse(glm::mat3(objectToWorldMatrix));
+			objectToWorldMatrix = glm::translate(objectToWorldMatrix,glm::vec3(0,.5,0)) * glm::rotate(objectToWorldMatrix, pi/3.0f, glm::vec3(0, 1, 0));
+            const glm::mat3& objectToWorldNormalMatrix = glm::transpose(glm::inverse(glm::mat3(objectToWorldMatrix)));
             const glm::mat4& cameraToWorldMatrix       = headToWorldMatrix * eyeToHead[eye];
 
             const glm::vec3& light = glm::normalize(glm::vec3(1.0f, 0.5f, 0.2f));
 
             // Draw the background
-            drawSky(framebufferWidth, framebufferHeight, nearPlaneZ, farPlaneZ, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(glm::transpose(glm::inverse(projectionMatrix[eye]))), &light.x);
+            drawSky(framebufferWidth, framebufferHeight, nearPlaneZ, farPlaneZ, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
 
             ////////////////////////////////////////////////////////////////////////
             // Draw a mesh
@@ -359,7 +362,7 @@ int main(const int argc, const char* argv[]) {
 
                 memcpy(ptr + uniformOffset[1], glm::value_ptr(objectToWorldMatrix), sizeof(objectToWorldMatrix));
 
-                const glm::mat4& modelViewProjectionMatrix = projectionMatrix[eye] * objectToWorldMatrix * glm::inverse(cameraToWorldMatrix);
+                const glm::mat4& modelViewProjectionMatrix = projectionMatrix[eye] * glm::inverse(cameraToWorldMatrix) * objectToWorldMatrix;
                 memcpy(ptr + uniformOffset[2], glm::value_ptr(modelViewProjectionMatrix), sizeof(modelViewProjectionMatrix));
                 memcpy(ptr + uniformOffset[3], &light.x, sizeof(light));
                 const glm::vec3& cameraPosition = cameraToWorldMatrix[3];
@@ -410,7 +413,7 @@ int main(const int argc, const char* argv[]) {
         if ((GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE)) || (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Z))) { bodyTranslation.y += cameraMoveSpeed; }
 
         // Keep the camera above the ground
-        if (bodyTranslation.y < 0.01f) { bodyTranslation.y = 0.01f; }
+        //if (bodyTranslation.y < 0.01f) { bodyTranslation.y = 0.01f; }
 
         static bool inDrag = false;
         const float cameraTurnSpeed = 0.005f;

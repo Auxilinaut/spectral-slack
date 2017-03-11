@@ -48,6 +48,8 @@
 #   pragma comment(lib, "glfw3")
 #endif
 
+#include "raw_model.h"
+
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
@@ -260,8 +262,8 @@ void drawSky(int windowWidth, int windowHeight, float nearPlaneZ, float farPlane
     glUseProgram(skyShader);
     glUniform3fv(lightUniform, 1, light);
     glUniform2f(resolutionUniform, float(windowWidth), float(windowHeight));
-    glUniformMatrix4fv(cameraToWorldMatrixUniform, 1, GL_TRUE, cameraToWorldMatrix);
-    glUniformMatrix4fv(invProjectionMatrixUniform, 1, GL_TRUE, projectionMatrixInverse);
+    glUniformMatrix4fv(cameraToWorldMatrixUniform, 1, GL_FALSE, cameraToWorldMatrix);
+    glUniformMatrix4fv(invProjectionMatrixUniform, 1, GL_FALSE, projectionMatrixInverse);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
 #   undef PIXEL_SHADER
