@@ -8,7 +8,7 @@
 */
 
 #pragma once
-#include "lab_mesh_loader.h"
+#include "mesh_loader.h"
 
 #define RAW_MODEL_SPHERE 0 // Model types.
 #define RAW_MODEL_CONE 1

@@ -12,9 +12,9 @@
 
 #pragma once
 
-#include "lab_mesh_loader.h"
+#include "mesh_loader.h"
 
-namespace lab{
+namespace mesh{
 	// Is a vertex format?
     VertexFormat::VertexFormat(){
         position_x = position_y = position_z = 0;
@@ -56,7 +56,7 @@ namespace lab{
         std::vector<unsigned int> indices;
         _loadObjFile(filename, vertices, indices);
 
-        std::cout << "Mesh Loader : am incarcat fisierul " << filename << std::endl;
+        std::cout << "Mesh Loader : loaded file " << filename << std::endl;
 
 		// Create the necessary OpenGL drawing objects
         unsigned int gl_vertex_array_object, gl_vertex_buffer_object, gl_index_buffer_object;
@@ -77,11 +77,11 @@ namespace lab{
 
 		// Link between attributes vertecsilor and pipeline, our data are interleaved.
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)0);						//trimite pozitii pe pipe 0
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)0);						//pos pipe 0
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)(sizeof(float)* 3));		//trimite normale pe pipe 1
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)(sizeof(float)* 3));		//normal pipe 1
         glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)(2 * sizeof(float)* 3));	//trimite texcoords pe pipe 2
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)(2 * sizeof(float)* 3));	//texcoords pipe 2
 
         vao = gl_vertex_array_object;
         vbo = gl_vertex_buffer_object;
@@ -140,7 +140,7 @@ namespace lab{
         //read the file
         std::ifstream file(filename.c_str(), std::ios::in | std::ios::binary);
         if (!file.good()){
-            std::cout << "Mesh Loader: Nu am gasit fisierul obj " << filename << " sau nu am drepturile sa il deschid!" << std::endl;
+            std::cout << "Mesh Loader: Obj file not found " << filename << " or no rights to open!" << std::endl;
             std::terminate();
         }
 

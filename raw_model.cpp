@@ -13,7 +13,7 @@
 // Load the object at the respective path.
 _RawModel::_RawModel(const RawModelInfo* info) {
     this->info = info;
-    lab::loadObj(info->path, this->vao, this->vbo, this->ibo, this->index_count);
+    mesh::loadObj(info->path, this->vao, this->vbo, this->ibo, this->index_count);
 }
 
 // Free the memory used by the buffers

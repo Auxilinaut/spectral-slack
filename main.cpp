@@ -75,10 +75,6 @@ GLFWwindow* window = nullptr;
     vr::IVRSystem* hmd = nullptr;
 #endif
 
-#ifndef Shape
-#   define Shape Cube
-#endif
-
 
 int main(const int argc, const char* argv[]) {
     std::cout << "Minimal OpenGL 4.1 Example by Morgan McGuire\n\nW, A, S, D, C, Z keys to translate\nMouse click and drag to rotate\nESC to quit\n\n";
@@ -133,37 +129,8 @@ int main(const int argc, const char* argv[]) {
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    /////////////////////////////////////////////////////////////////
-    // Load vertex array buffers
-
-    GLuint positionBuffer = GL_NONE;
-    glGenBuffers(1, &positionBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shape::position), Shape::position, GL_STATIC_DRAW);
-
-    GLuint texCoordBuffer = GL_NONE;
-    glGenBuffers(1, &texCoordBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, texCoordBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shape::texCoord), Shape::texCoord, GL_STATIC_DRAW);
-
-    GLuint normalBuffer = GL_NONE;
-    glGenBuffers(1, &normalBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shape::normal), Shape::normal, GL_STATIC_DRAW);
-
-    GLuint tangentBuffer = GL_NONE;
-    glGenBuffers(1, &tangentBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, tangentBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shape::tangent), Shape::tangent, GL_STATIC_DRAW);
-
-    const int numVertices = sizeof(Shape::position) / sizeof(Shape::position[0]);
-    (void)numVertices;
-
-    GLuint indexBuffer = GL_NONE;
-    glGenBuffers(1, &indexBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Shape::index), Shape::index, GL_STATIC_DRAW);
-    const int numIndices = sizeof(Shape::index) / sizeof(Shape::index[0]);
+    /* /////////////////////////////////////////////////////////////////
+    // TODO: Load vertex array buffers */
 
     /////////////////////////////////////////////////////////////////////
     // Create the main shader
@@ -172,8 +139,7 @@ int main(const int argc, const char* argv[]) {
     // Binding points for attributes and uniforms discovered from the shader
     const GLint positionAttribute   = glGetAttribLocation(shader,  "position");
     const GLint normalAttribute     = glGetAttribLocation(shader,  "normal");
-    const GLint texCoordAttribute   = glGetAttribLocation(shader,  "texCoord");
-    const GLint tangentAttribute    = glGetAttribLocation(shader,  "tangent");    
+    const GLint texCoordAttribute   = glGetAttribLocation(shader,  "texCoord"); 
     const GLint colorTextureUniform = glGetUniformLocation(shader, "colorTexture");
 
     const GLuint uniformBlockIndex = glGetUniformBlockIndex(shader, "Uniform");
@@ -195,7 +161,6 @@ int main(const int argc, const char* argv[]) {
         "Uniform.objectToWorldNormalMatrix",
         "Uniform.objectToWorldMatrix",
         "Uniform.modelViewProjectionMatrix",
-        "Uniform.light",
         "Uniform.cameraPosition"};
 
     const int numBlockUniforms = sizeof(uniformName) / sizeof(uniformName[0]);
@@ -260,7 +225,7 @@ int main(const int argc, const char* argv[]) {
 	glm::mat4 projectionMatrix[numEyes] = { glm::mat4(1.0f) };
 	glm::mat4 headToBodyMatrix = glm::mat4(1.0f);
 	
-
+	/////////////////////////////////////////////////////////////////////
     // Main loop
     int timer = 0;
     while (! glfwWindowShouldClose(window)) {
@@ -308,40 +273,8 @@ int main(const int argc, const char* argv[]) {
             // Draw the background
             drawSky(framebufferWidth, framebufferHeight, nearPlaneZ, farPlaneZ, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
 
-            ////////////////////////////////////////////////////////////////////////
-            // Draw a mesh
-            glEnable(GL_DEPTH_TEST);
-            glDepthFunc(GL_LESS);
-            glEnable(GL_CULL_FACE);
-            glDepthMask(GL_TRUE);
-        
-            glUseProgram(shader);
-
-            // in position
-            glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
-            glVertexAttribPointer(positionAttribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(positionAttribute);
-
-            // in normal
-            glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
-            glVertexAttribPointer(normalAttribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(normalAttribute);
-
-            // in tangent
-            if (tangentAttribute != -1) {
-                // Only bind if used
-                glBindBuffer(GL_ARRAY_BUFFER, tangentBuffer);
-                glVertexAttribPointer(tangentAttribute, 4, GL_FLOAT, GL_FALSE, 0, 0);
-                glEnableVertexAttribArray(tangentAttribute);
-            }
-
-            // in texCoord 
-            glBindBuffer(GL_ARRAY_BUFFER, texCoordBuffer);
-            glVertexAttribPointer(texCoordAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(texCoordAttribute);
-
-            // indexBuffer
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+            /* ////////////////////////////////////////////////////////////////////////
+            // TODO: Draw a mesh */
 
             // uniform colorTexture (samplers cannot be placed in blocks)
             const GLint colorTextureUnit = 0;
@@ -413,7 +346,7 @@ int main(const int argc, const char* argv[]) {
         if ((GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE)) || (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Z))) { bodyTranslation.y += cameraMoveSpeed; }
 
         // Keep the camera above the ground
-        //if (bodyTranslation.y < 0.01f) { bodyTranslation.y = 0.01f; }
+        if (bodyTranslation.y < 0.01f) { bodyTranslation.y = 0.01f; }
 
         static bool inDrag = false;
         const float cameraTurnSpeed = 0.005f;
