@@ -64,6 +64,11 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "minimalOpenGL.h"
+#include "mesh_loader.h"
+#include "raw_model.h"
+#include "light_system.h"
+#include "movable.h"
+#include "map.h"
 
 #ifdef _VR
 #   include "minimalOpenVR.h"
@@ -74,6 +79,8 @@ GLFWwindow* window = nullptr;
 #ifdef _VR
     vr::IVRSystem* hmd = nullptr;
 #endif
+
+#define BACKGROUND_COLOR glm::vec4(0.886f, 0.941f, 0.953f, 1)
 
 
 int main(const int argc, const char* argv[]) {
@@ -129,10 +136,26 @@ int main(const int argc, const char* argv[]) {
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    /* /////////////////////////////////////////////////////////////////
-    // TODO: Load vertex array buffers */
+	//////////////////////////////////////////////////////////////////////
+	// Instantiate values
 
-    /////////////////////////////////////////////////////////////////////
+	RawModelFactory::instantiateModelFactory();
+	
+	bool wireframe = false;
+	glPolygonMode(GL_FRONT_AND_BACK, (wireframe ? GL_LINE : GL_FILL));
+
+	bool lights_on = true;
+
+	Camera* camera = new Camera();
+
+	LightSystem* light_system = new LightSystem(LIGHT_OMNI, camera);
+
+	Map* map = new Map(glm::vec3(0.0f,0.0f,0.0f), FOG_END_RADIUS, MAP_MODE_BASE);
+
+	float time;
+	int previous_time = glfwGetTime();
+
+    //////////////////////////////////////////////////////////////////////
     // Create the main shader
     const GLuint shader = createShaderProgram(loadTextFile("min.vert"), loadTextFile("min.frag"));
 
@@ -143,7 +166,7 @@ int main(const int argc, const char* argv[]) {
     const GLint colorTextureUniform = glGetUniformLocation(shader, "colorTexture");
 
     const GLuint uniformBlockIndex = glGetUniformBlockIndex(shader, "Uniform");
-    const GLuint uniformBindingPoint = 1;
+    const GLuint uniformBindingPoint = 3;
     glUniformBlockBinding(shader, uniformBlockIndex, uniformBindingPoint);
 
     GLuint uniformBlock;
@@ -235,6 +258,7 @@ int main(const int argc, const char* argv[]) {
         const float farPlaneZ = -100.0f;
         const float verticalFieldOfView = 45.0f * pi / 180.0f;
 		
+		getTime(&previous_time, &time); //WHAT YEAR IS IT
 
 #       ifdef _VR
             getEyeTransformations(hmd, trackedDevicePose, nearPlaneZ, farPlaneZ, headToBodyMatrix.data, eyeToHead[0].data, eyeToHead[1].data, projectionMatrix[0].data, projectionMatrix[1].data);
@@ -303,7 +327,6 @@ int main(const int argc, const char* argv[]) {
                 glUnmapBuffer(GL_UNIFORM_BUFFER);
             }
 
-            glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
 #           ifdef _VR
             {
                 const vr::Texture_t tex = { reinterpret_cast<void*>(intptr_t(colorRenderTarget[eye])), vr::API_OpenGL, vr::ColorSpace_Gamma };
@@ -379,6 +402,16 @@ int main(const int argc, const char* argv[]) {
     return 0;
 }
 
+// Get time from last frame.
+void getTime(int *previous_time, float *time) {
+	int time_interval;
+	int current_time;
+
+	current_time = glfwGetTime();
+	time_interval = current_time - *previous_time;
+	*previous_time = current_time;
+	*time = (float)time_interval / 1000.0f;
+}
 
 #ifdef _WINDOWS
     int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int sw) {

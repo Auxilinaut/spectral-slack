@@ -13,6 +13,8 @@
 #include "glm\gtx\vector_angle.hpp"
 #include "raw_model.h"
 #include "movable.h"
+#include "camera.h"
+#include "texture_loader.h"
 
 // Fog constants.
 #define FOG_START_RADIUS 900.0f
@@ -72,12 +74,12 @@ static const RawModelMaterial SUN_MATERIAL = RawModelMaterial(
 
 class Sun : public Movable {
 public:
-    Sun(glm::vec3 cameraPosition);
+    Sun(Camera* camera);
     ~Sun();
 
     void render(unsigned int shader, glm::mat4 model_matrix);
 private:
-    glm::vec3 cameraPosition;
+	Camera* camera;
     unsigned int texture;
 };
 

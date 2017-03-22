@@ -106,9 +106,9 @@ void RawModelFactory::render(unsigned int vao, unsigned int index_count,
 
     // Render model.
     glUniformMatrix4fv(
-        glGetUniformLocation(shader, "model_matrix"), 1, false,
-        glm::value_ptr(model_matrix * translation_matrix * transform_matrix *
-        scale_matrix));
+		glGetUniformLocation(shader, "object.objectToWorldMatrix"), 1, false,
+		glm::value_ptr(model_matrix * translation_matrix * transform_matrix *
+		scale_matrix));
 
     // Bind VAO buffer and call draw the object.
     glBindVertexArray(vao);

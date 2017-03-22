@@ -10,11 +10,11 @@
 #include "light_system.h"
 
 // Sun constructor. Loads the texture and initializes the vectors.
-Sun::Sun(glm::vec3 cameraPosition)
+Sun::Sun(Camera* camera)
 :Movable(SUN_POSITION, glm::vec3(), glm::vec3(), glm::vec3()) {
-    this->cameraPosition = cameraPosition;
+	this->camera = camera;
 
-    this->texture = lab::loadTextureBMP("resources\\sun.bmp");
+    this->texture = texture::loadTextureBMP("resources\\sun.bmp");
 }
 
 // Deconstructor.
@@ -29,10 +29,10 @@ Sun::~Sun() {
 void Sun::render(unsigned int shader, glm::mat4 model_matrix) {
     // Update the sun's position.
     glm::vec3 sun_position = this->position +
-        glm::vec3(this->cameraPosition.x, 0, 0);
+        glm::vec3(this->camera->position.x, 0, 0);
 
     // Compute the sun vectors such that it faces the camera.
-    this->forward = glm::normalize(this->cameraPosition - sun_position);
+    this->forward = glm::normalize(this->camera->position - sun_position);
     this->right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), this->forward));
     this->up = glm::normalize(glm::cross(this->forward, this->right));
 
