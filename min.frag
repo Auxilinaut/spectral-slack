@@ -6,8 +6,6 @@ in Varying {
     vec3            normal;
     vec2            texCoord;
     vec3            position;
-    vec3            tangent;
-    flat float      tangentYSign;
 } interpolated;
 
 layout(shared) uniform Uniform {
@@ -126,7 +124,6 @@ uniform vec3 sun_position;
 uniform vec4 sun_color;
 uniform float sun_size;
 uniform bool draw_sun;
-uniform sampler2D sun_texture;
 
 uniform int material_shininess;
 uniform vec4 material_ke;
@@ -186,13 +183,13 @@ vec4 computeLight(vec3 position, vec3 V, vec4 color, float inner_angle,
             vec4 diffuseLight, specularLight;
 
             // Calculate the diffuse component.
-            diffuseLight = material_kd * color * max(dot(world_normal, Ln), 0);
+            diffuseLight = material_kd * color * max(dot(interpolated.normal, Ln), 0);
 
             // Compute the specular component and return attenuated and reduced
             // color (reduced only if spotlight).
             if (diffuseLight.x > 0 || diffuseLight.y > 0 || diffuseLight.z > 0) {
                 specularLight = (material_ks * color *
-                    pow(max(dot(world_normal, H), 0), material_shininess));
+                    pow(max(dot(interpolated.normal, H), 0), material_shininess));
 
                 return spot_falloff * attenuation * (diffuseLight + specularLight);
             }

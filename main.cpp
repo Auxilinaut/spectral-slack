@@ -82,6 +82,16 @@ GLFWwindow* window = nullptr;
 
 #define BACKGROUND_COLOR glm::vec4(0.886f, 0.941f, 0.953f, 1)
 
+// Get time from last frame.
+void getTime(int *previous_time, float *time) {
+	int time_interval;
+	int current_time;
+
+	current_time = glfwGetTime();
+	time_interval = current_time - *previous_time;
+	*previous_time = current_time;
+	*time = (float)time_interval / 1000.0f;
+}
 
 int main(const int argc, const char* argv[]) {
     std::cout << "Minimal OpenGL 4.1 Example by Morgan McGuire\n\nW, A, S, D, C, Z keys to translate\nMouse click and drag to rotate\nESC to quit\n\n";
@@ -166,7 +176,7 @@ int main(const int argc, const char* argv[]) {
     const GLint colorTextureUniform = glGetUniformLocation(shader, "colorTexture");
 
     const GLuint uniformBlockIndex = glGetUniformBlockIndex(shader, "Uniform");
-    const GLuint uniformBindingPoint = 3;
+    const GLuint uniformBindingPoint = 5;
     glUniformBlockBinding(shader, uniformBlockIndex, uniformBindingPoint);
 
     GLuint uniformBlock;
@@ -302,6 +312,7 @@ int main(const int argc, const char* argv[]) {
 
             // uniform colorTexture (samplers cannot be placed in blocks)
             const GLint colorTextureUnit = 0;
+			glUseProgram(shader);
             glActiveTexture(GL_TEXTURE0 + colorTextureUnit);
             glBindTexture(GL_TEXTURE_2D, colorTexture);
             glBindSampler(colorTextureUnit, trilinearSampler);
@@ -321,9 +332,9 @@ int main(const int argc, const char* argv[]) {
 
                 const glm::mat4& modelViewProjectionMatrix = projectionMatrix[eye] * glm::inverse(cameraToWorldMatrix) * objectToWorldMatrix;
                 memcpy(ptr + uniformOffset[2], glm::value_ptr(modelViewProjectionMatrix), sizeof(modelViewProjectionMatrix));
-                memcpy(ptr + uniformOffset[3], &light.x, sizeof(light));
+                //memcpy(ptr + uniformOffset[3], &light.x, sizeof(light));
                 const glm::vec3& cameraPosition = cameraToWorldMatrix[3];
-                memcpy(ptr + uniformOffset[4], &cameraPosition.x, sizeof(glm::vec3));
+                memcpy(ptr + uniformOffset[3], &cameraPosition.x, sizeof(glm::vec3));
                 glUnmapBuffer(GL_UNIFORM_BUFFER);
             }
 
@@ -396,21 +407,17 @@ int main(const int argc, const char* argv[]) {
         }
 #   endif
 
+	// Destructors
+	glDeleteProgram(shader);
+	camera->~Camera();
+	light_system->~LightSystem();
+	map->~Map();
+	RawModelFactory::destructModelFactory();
+
     // Close the GL context and release all resources
     glfwTerminate();
 
     return 0;
-}
-
-// Get time from last frame.
-void getTime(int *previous_time, float *time) {
-	int time_interval;
-	int current_time;
-
-	current_time = glfwGetTime();
-	time_interval = current_time - *previous_time;
-	*previous_time = current_time;
-	*time = (float)time_interval / 1000.0f;
 }
 
 #ifdef _WINDOWS

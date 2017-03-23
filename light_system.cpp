@@ -54,6 +54,7 @@ void Sun::render(unsigned int shader, glm::mat4 model_matrix) {
     // We're no longer drawing fog for the sun plane, to ensure realism.
     glUniform1i(glGetUniformLocation(shader, "fog_switch"), false);
 
+	/*
     // Send texture data to the shader.
     glActiveTexture(GL_TEXTURE0 + 4);
     glBindTexture(GL_TEXTURE_2D, this->texture);
@@ -64,7 +65,7 @@ void Sun::render(unsigned int shader, glm::mat4 model_matrix) {
         (RawModelMaterial*)&SUN_MATERIAL,
         sun_position,
         glm::vec3(SUN_SIZE, SUN_SIZE, 1),
-        model_matrix, rotation_matrix, shader);
+        model_matrix, rotation_matrix, shader);*/
 
     // Notify the shader we're no longer rendering the sun plane.
     glUniform1i(glGetUniformLocation(shader, "draw_sun"), false);
