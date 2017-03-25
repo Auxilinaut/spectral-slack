@@ -105,8 +105,10 @@ void RawModelFactory::render(unsigned int vao, unsigned int index_count,
     translation_matrix = glm::translate(glm::mat4(), position);
 
     // Render model.
+	//int modelLoc = glGetUniformLocation(shader, "Uniform.objectToWorldMatrix");
+	//std::printf("int modelLoc = %d",modelLoc);
     glUniformMatrix4fv(
-		glGetUniformLocation(shader, "Uniform.objectToWorldMatrix"), 1, false,
+		1, 1, false,
 		glm::value_ptr(model_matrix * translation_matrix * transform_matrix *
 		scale_matrix));
 

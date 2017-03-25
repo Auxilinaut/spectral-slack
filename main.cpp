@@ -1,45 +1,5 @@
 /**
-  \file minimalOpenGL/main.cpp
-  \author Morgan McGuire, http://graphics.cs.williams.edu
-  Distributed with the G3D Innovation Engine http://g3d.cs.williams.edu
-
-  Features demonstrated:
-   * Window, OpenGL, and extension initialization
-   * Triangle mesh rendering (GL Vertex Array Buffer)
-   * Texture map loading (GL Texture Object)
-   * Shader loading (GL Program and Shader Objects)
-   * Fast shader argument binding (GL Uniform Buffer Objects)
-   * Offscreen rendering / render-to-texture (GL Framebuffer Object)
-   * Ray tracing
-   * Procedural texture
-   * Tiny vector math library
-   * Mouse and keyboard handling
-
-  This is a minimal example of an OpenGL 4 program using only
-  GLFW and GLEW libraries to simplify initialization. It does
-  not depend on G3D or any other external libraries at all. 
-  You could use SDL or another thin library instead of those two.
-  If you want to use VR, this also requires the OpenVR library.
-  (All dependencies are included with G3D)
-  
-  This is useful as a testbed when isolating driver bugs and 
-  seeking a minimal context. 
-
-  It is also helpful if you're new to computer graphics and wish to
-  see the underlying hardware API without the high-level features that
-  G3D provides.
-
-  I chose OpenGL 4.1 because it is the newest OpenGL available on OS
-  X, and thus the newest OpenGL that can be used across the major PC
-  operating systems of Windows, Linux, OS X, and Steam.
-
-  If you're interested in other minimal graphics code for convenience,
-  also look at the stb libraries for single-header, dependency-free support
-  for image loading, parsing, fonts, noise, etc.:
-     https://github.com/nothings/stb
-
-  And a SDL-based minimal OpenGL program at:
-     https://gist.github.com/manpat/112f3f31c983ccddf044
+   OpenVR base by Morgan McGuire: http://graphics.cs.williams.edu
   
   Reference Frames:
       Object: The object being rendered (the Shape in this example) relative to its own origin
@@ -51,10 +11,6 @@
 
 // Uncomment to add VR support
 //#define _VR
-
-// To switch the box to a teapot, uncomment the following two lines
-//#include "teapot.h"
-//#define Shape Teapot
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -161,6 +117,7 @@ int main(const int argc, const char* argv[]) {
 	LightSystem* light_system = new LightSystem(LIGHT_OMNI, camera);
 
 	Map* map = new Map(glm::vec3(0.0f,0.0f,0.0f), FOG_END_RADIUS, MAP_MODE_BASE);
+	map->setMode(MAP_MODE_BASE);
 
 	float time;
 	int previous_time = glfwGetTime();
@@ -307,12 +264,26 @@ int main(const int argc, const char* argv[]) {
             // Draw the background
             drawSky(framebufferWidth, framebufferHeight, nearPlaneZ, farPlaneZ, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
 
-            /* ////////////////////////////////////////////////////////////////////////
-            // TODO: Draw a mesh */
-
             // uniform colorTexture (samplers cannot be placed in blocks)
             const GLint colorTextureUnit = 0;
 			glUseProgram(shader);
+
+			// Send global variables.
+			glUniform4f(glGetUniformLocation(shader, "background_color"),
+				BACKGROUND_COLOR.r, BACKGROUND_COLOR.g, BACKGROUND_COLOR.b,
+				BACKGROUND_COLOR.a);
+			glUniform1i(glGetUniformLocation(shader, "lights_on"),
+				lights_on);
+
+			// Set drawing mode to fill, for other elements than the map.
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+			light_system->render(shader, objectToWorldMatrix);
+
+			glPolygonMode(GL_FRONT_AND_BACK, (wireframe ? GL_LINE : GL_FILL));
+
+			map->render(shader, objectToWorldMatrix, camera->getPosition());
+
             glActiveTexture(GL_TEXTURE0 + colorTextureUnit);
             glBindTexture(GL_TEXTURE_2D, colorTexture);
             glBindSampler(colorTextureUnit, trilinearSampler);

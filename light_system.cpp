@@ -65,10 +65,10 @@ void Sun::render(unsigned int shader, glm::mat4 model_matrix) {
         (RawModelMaterial*)&SUN_MATERIAL,
         sun_position,
         glm::vec3(SUN_SIZE, SUN_SIZE, 1),
-        model_matrix, rotation_matrix, shader);*/
+        model_matrix, rotation_matrix, shader);
 
     // Notify the shader we're no longer rendering the sun plane.
-    glUniform1i(glGetUniformLocation(shader, "draw_sun"), false);
+    glUniform1i(glGetUniformLocation(shader, "draw_sun"), false);*/
 }
 
 // Instantiate a simple light, with its variables.
