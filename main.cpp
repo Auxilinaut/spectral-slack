@@ -117,7 +117,7 @@ int main(const int argc, const char* argv[]) {
 	LightSystem* light_system = new LightSystem(LIGHT_OMNI, camera);
 
 	Map* map = new Map(glm::vec3(0.0f,0.0f,0.0f), FOG_END_RADIUS, MAP_MODE_BASE);
-	map->setMode(MAP_MODE_BASE);
+	map->setMode(MAP_MODE_FRACTAL);
 
 	float time;
 	int previous_time = glfwGetTime();
@@ -261,12 +261,8 @@ int main(const int argc, const char* argv[]) {
 
             const glm::vec3& light = glm::normalize(glm::vec3(1.0f, 0.5f, 0.2f));
 
-            // Draw the background
-            drawSky(framebufferWidth, framebufferHeight, nearPlaneZ, farPlaneZ, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
-
-            // uniform colorTexture (samplers cannot be placed in blocks)
-            const GLint colorTextureUnit = 0;
-			glUseProgram(shader);
+			// Set drawing mode to fill, for other elements than the map.
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			// Send global variables.
 			glUniform4f(glGetUniformLocation(shader, "background_color"),
@@ -275,22 +271,17 @@ int main(const int argc, const char* argv[]) {
 			glUniform1i(glGetUniformLocation(shader, "lights_on"),
 				lights_on);
 
-			// Set drawing mode to fill, for other elements than the map.
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-			light_system->render(shader, objectToWorldMatrix);
-
-			glPolygonMode(GL_FRONT_AND_BACK, (wireframe ? GL_LINE : GL_FILL));
-
-			map->render(shader, objectToWorldMatrix, camera->getPosition());
+			// uniform colorTexture - sampler binding
+			const GLint colorTextureUnit = 0;
+			glUseProgram(shader);
 
             glActiveTexture(GL_TEXTURE0 + colorTextureUnit);
             glBindTexture(GL_TEXTURE_2D, colorTexture);
             glBindSampler(colorTextureUnit, trilinearSampler);
             glUniform1i(colorTextureUniform, colorTextureUnit);
 
-            // Other uniforms in the interface block
-            {
+            // Bind uniforms in the interface block
+            //{
                 glBindBufferBase(GL_UNIFORM_BUFFER, uniformBindingPoint, uniformBlock);
 
                 GLubyte* ptr = (GLubyte*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
@@ -307,7 +298,15 @@ int main(const int argc, const char* argv[]) {
                 const glm::vec3& cameraPosition = cameraToWorldMatrix[3];
                 memcpy(ptr + uniformOffset[3], &cameraPosition.x, sizeof(glm::vec3));
                 glUnmapBuffer(GL_UNIFORM_BUFFER);
-            }
+            //}
+
+			// Draw the background and lights
+			drawSky(framebufferWidth, framebufferHeight, nearPlaneZ, farPlaneZ, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
+			light_system->render(shader, objectToWorldMatrix);
+
+			// Draw the map
+			glPolygonMode(GL_FRONT_AND_BACK, (wireframe ? GL_LINE : GL_FILL));
+			map->render(shader, objectToWorldMatrix, cameraPosition, ptr, uniformOffset);
 
 #           ifdef _VR
             {

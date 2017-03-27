@@ -67,7 +67,7 @@ public:
         RawModelMaterial* material,
         glm::vec3 position, glm::vec3 size,
         glm::mat4 model_matrix, glm::mat4 transform_matrix,
-        unsigned int shader);
+        unsigned int shader, GLubyte* ptr, GLint uniformOffset[]);
     static void renderModel(int model_id, RawModelMaterial* material,
         glm::vec3 position, glm::vec3 size,
         glm::mat4 model_matrix, glm::mat4 transform_matrix,

@@ -85,7 +85,7 @@ void RawModelFactory::render(unsigned int vao, unsigned int index_count,
     RawModelMaterial* material,
     glm::vec3 position, glm::vec3 size,
     glm::mat4 model_matrix, glm::mat4 transform_matrix,
-    unsigned int shader) {
+    unsigned int shader, GLubyte* ptr, GLint uniformOffset[]) {
     glm::mat4 scale_matrix, translation_matrix;
 
     // Send material data to the shader.
@@ -104,13 +104,15 @@ void RawModelFactory::render(unsigned int vao, unsigned int index_count,
     scale_matrix = glm::scale(glm::mat4(), glm::vec3(size.x, size.y, size.z));
     translation_matrix = glm::translate(glm::mat4(), position);
 
-    // Render model.
-	//int modelLoc = glGetUniformLocation(shader, "Uniform.objectToWorldMatrix");
-	//std::printf("int modelLoc = %d",modelLoc);
-    glUniformMatrix4fv(
+    // Send model rendering info via uniform block to shader.
+    /*glUniformMatrix4fv(
 		1, 1, false,
 		glm::value_ptr(model_matrix * translation_matrix * transform_matrix *
-		scale_matrix));
+		scale_matrix));*/
+	const GLuint uniBlkIdx = glGetUniformBlockIndex(shader, "Uniform");
+
+	
+
 
     // Bind VAO buffer and call draw the object.
     glBindVertexArray(vao);

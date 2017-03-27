@@ -104,7 +104,7 @@ public:
 
     void setMode(unsigned int mode);
     void render(unsigned int shader, glm::mat4 model_matrix,
-        glm::vec3 position);
+        glm::vec3 position, GLubyte* ptr, GLint uniformOffset[]);
 
     void generateBase(unsigned int mode, unsigned int square_count);
     void generateTerrain(unsigned int mode, unsigned int square_count);
