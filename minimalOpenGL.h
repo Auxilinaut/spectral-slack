@@ -1,22 +1,7 @@
 /**
-  \file minimalOpenGL/minimalOpenGL.h
-  \author Morgan McGuire, http://graphics.cs.williams.edu
-  Distributed with the G3D Innovation Engine http://g3d.cs.williams.edu
+  Original author Morgan McGuire, http://graphics.cs.williams.edu
 
   Minimal headers emulating a basic set of 3D graphics classes.
-  This does not depend on any vector math library.
-
-  This requires the headers and source (or static binary) from GLEW
-   
-     http://glew.sourceforge.net/
-
-  and from GLFW 
-
-     http://www.glfw.org/
-
-  (All of which are distributed with G3D)
-
-  All 3D math from http://graphicscodex.com
 */
 #pragma once
 #pragma clang diagnostic push
@@ -173,7 +158,6 @@ GLuint createShaderProgram(const std::string& vertexShaderSource, const std::str
 
 /** Submits a full-screen quad at the far plane and runs a procedural sky shader on it.
 
-    All matrices are 4x4 row-major
     \param light Light vector, must be normalized 
  */
 void drawSky(int windowWidth, int windowHeight, float nearPlaneZ, float farPlaneZ, const float* cameraToWorldMatrix, const float* projectionMatrixInverse, const float* light) {

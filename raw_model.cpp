@@ -8,6 +8,11 @@
 */
 
 #pragma once
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "raw_model.h"
 
 // Load the object at the respective path.
@@ -27,13 +32,13 @@ _RawModel::~_RawModel() {
 void _RawModel::render(RawModelMaterial* material,
     glm::vec3 position, glm::vec3 size,
     glm::mat4 model_matrix, glm::mat4 transform_matrix,
-    unsigned int shader) {
+    unsigned int shader, GLubyte* ptr, GLint uniformOffset[]) {
     // Delegate to the generic render function.
     RawModelFactory::render(this->vao, this->index_count,
         material, position,
         glm::vec3(size.x / this->info->size.x, size.y / this->info->size.y,
         size.z / this->info->size.z),
-        model_matrix, transform_matrix, shader);
+        model_matrix, transform_matrix, shader, ptr, uniformOffset);
 }
 
 // Instantiate all models.
@@ -71,13 +76,13 @@ void RawModelFactory::destructModelFactory() {
 void RawModelFactory::renderModel(int model_id, RawModelMaterial* material,
     glm::vec3 position, glm::vec3 size,
     glm::mat4 model_matrix, glm::mat4 transform_matrix,
-    unsigned int shader) {
+    unsigned int shader, GLubyte* ptr, GLint uniformOffset[]) {
     // Make sure the models are loaded first.
     RawModelFactory::instantiateModelFactory();
 
     // Render the model.
     RawModelFactory::models[model_id]->render(material, position, size,
-        model_matrix, transform_matrix, shader);
+        model_matrix, transform_matrix, shader, ptr, uniformOffset);
 }
 
 // Render a generic model based on its Vertex Array Object.
@@ -109,12 +114,12 @@ void RawModelFactory::render(unsigned int vao, unsigned int index_count,
 		1, 1, false,
 		glm::value_ptr(model_matrix * translation_matrix * transform_matrix *
 		scale_matrix));*/
-	const GLuint uniBlkIdx = glGetUniformBlockIndex(shader, "Uniform");
 
-	
+	memcpy(ptr + uniformOffset[1], glm::value_ptr(model_matrix * translation_matrix * transform_matrix *
+		scale_matrix), sizeof(glm::mat4));
 
 
     // Bind VAO buffer and call draw the object.
     glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT,0);
 }

@@ -8,7 +8,7 @@ in Varying {
     vec3            position;
 } interpolated;
 
-layout(shared) uniform Uniform {
+uniform Uniform {
     mat3x3          objectToWorldNormalMatrix;
     mat4x4          objectToWorldMatrix;
     mat4x4          modelViewProjectionMatrix;
