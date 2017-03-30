@@ -1,7 +1,5 @@
 /**
-* SPG Assignment #2 - 2013
-*
-* Author: Stamate Cosmin, 342C4
+* Original author: Stamate Cosmin
 *
 * Description: Map generator.
 * The algorithm used in generation is the diamond square fractal generator:

@@ -1,18 +1,9 @@
 #pragma once
 /**
-  \file minimalOpenGL/minimalOpenVR.h
-  \author Morgan McGuire, http://graphics.cs.williams.edu
-  Distributed with the G3D Innovation Engine http://g3d.cs.williams.edu
-
-  Minimal headers for including Valve's OpenVR / SteamVR API, 
-  which currently supports Vive and Oculus Virtual Reality 
-  head mounted displays (HMDs). This does not depend on any 
-  vector math library or specific OpenGL intialization library.
+  Credit to Morgan McGuire, http://graphics.cs.williams.edu
 
   This requires the bin, lib, and headers directories from the 
-  OpenVR SDK (which are also distributed with G3D):
-   
-     https://github.com/ValveSoftware/openvr
+  OpenVR SDK: https://github.com/ValveSoftware/openvr
 
   The runtime for OpenVR is distributed with Steam. Ensure that 
   you've run Steam and let it update to the latest SteamVR before
@@ -133,8 +124,8 @@ void getEyeTransformations
         }
     }
 
-    const vr::HmdMatrix44_t& ltProj = hmd->GetProjectionMatrix(vr::Eye_Left,  -nearPlaneZ, -farPlaneZ, vr::API_OpenGL);
-    const vr::HmdMatrix44_t& rtProj = hmd->GetProjectionMatrix(vr::Eye_Right, -nearPlaneZ, -farPlaneZ, vr::API_OpenGL);
+    const vr::HmdMatrix44_t& ltProj = hmd->GetProjectionMatrix(vr::Eye_Left,  nearPlaneZ, farPlaneZ, vr::API_OpenGL);
+    const vr::HmdMatrix44_t& rtProj = hmd->GetProjectionMatrix(vr::Eye_Right, nearPlaneZ, farPlaneZ, vr::API_OpenGL);
 
     for (int r = 0; r < 4; ++r) {
         for (int c = 0; c < 4; ++c) {

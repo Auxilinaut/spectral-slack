@@ -221,8 +221,8 @@ int main(const int argc, const char* argv[]) {
     while (! glfwWindowShouldClose(window)) {
         assert(glGetError() == GL_NONE);
 
-        const float nearPlaneZ = -0.1f;
-        const float farPlaneZ = -100.0f;
+        const float nearPlaneZ = 0.1f;
+        const float farPlaneZ = 100.0f;
         const float verticalFieldOfView = 45.0f * pi / 180.0f;
 		
 		getTime(&previous_time, &time); //WHAT YEAR IS IT
@@ -230,7 +230,7 @@ int main(const int argc, const char* argv[]) {
 #       ifdef _VR
             getEyeTransformations(hmd, trackedDevicePose, nearPlaneZ, farPlaneZ, headToBodyMatrix.data, eyeToHead[0].data, eyeToHead[1].data, projectionMatrix[0].data, projectionMatrix[1].data);
 #       else
-		projectionMatrix[0] = glm::perspective(verticalFieldOfView, float(framebufferWidth / framebufferHeight), nearPlaneZ, farPlaneZ);
+		projectionMatrix[0] = glm::perspective(verticalFieldOfView, float(framebufferWidth / framebufferHeight), -nearPlaneZ, farPlaneZ);
 #       endif
 
         // printf("float nearPlaneZ = %f, farPlaneZ = %f; int width = %d, height = %d;\n", nearPlaneZ, farPlaneZ, framebufferWidth, framebufferHeight);
@@ -265,7 +265,7 @@ int main(const int argc, const char* argv[]) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			//2nd shader floor and sky drawer
-			drawSky(framebufferWidth, framebufferHeight, nearPlaneZ, farPlaneZ, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
+			drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
 
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LESS);
@@ -293,7 +293,7 @@ int main(const int argc, const char* argv[]) {
 
                 GLubyte* ptr = (GLubyte*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
 				const glm::vec3& cameraPosition = cameraToWorldMatrix[3];
-				const glm::mat4& modelViewProjectionMatrix = glm::inverse(projectionMatrix[eye]) * glm::inverse(cameraToWorldMatrix) * objectToWorldMatrix;
+				const glm::mat4& modelViewProjectionMatrix = glm::inverse(projectionMatrix[eye]) * cameraToWorldMatrix * objectToWorldMatrix;
 
                 // mat3 is passed to openGL as if it was mat4 due to padding rules.
                 for (int row = 0; row < 3; ++row) {
