@@ -13,6 +13,7 @@
 //#define _VR
 
 ////////////////////////////////////////////////////////////////////////////////
+#define GLM_SWIZZLE
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -230,7 +231,7 @@ int main(const int argc, const char* argv[]) {
 #       ifdef _VR
             getEyeTransformations(hmd, trackedDevicePose, nearPlaneZ, farPlaneZ, headToBodyMatrix.data, eyeToHead[0].data, eyeToHead[1].data, projectionMatrix[0].data, projectionMatrix[1].data);
 #       else
-		projectionMatrix[0] = glm::perspective(verticalFieldOfView, float(framebufferWidth / framebufferHeight), -nearPlaneZ, farPlaneZ);
+		projectionMatrix[0] = glm::perspective(verticalFieldOfView, float(framebufferWidth / framebufferHeight), nearPlaneZ, farPlaneZ);
 #       endif
 
         // printf("float nearPlaneZ = %f, farPlaneZ = %f; int width = %d, height = %d;\n", nearPlaneZ, farPlaneZ, framebufferWidth, framebufferHeight);
@@ -256,7 +257,6 @@ int main(const int argc, const char* argv[]) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			//objectToWorldMatrix = glm::translate(objectToWorldMatrix,glm::vec3(0,.5,0)) * glm::rotate(objectToWorldMatrix, pi/3.0f, glm::vec3(0, 1, 0));
-            const glm::mat3& objectToWorldNormalMatrix = glm::inverse(glm::transpose(glm::mat3(objectToWorldMatrix)));
             const glm::mat4& cameraToWorldMatrix       = headToWorldMatrix * eyeToHead[eye];
 
             const glm::vec3& light = glm::normalize(glm::vec3(1.0f, 0.5f, 0.2f));
@@ -288,32 +288,36 @@ int main(const int argc, const char* argv[]) {
 			glUniform1i(glGetUniformLocation(shader, "lights_on"),
 				lights_on);
 
+
+
             // Bind uniforms in the interface block
-                glBindBufferBase(GL_UNIFORM_BUFFER, uniformBindingPoint, uniformBlock);
 
-                GLubyte* ptr = (GLubyte*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-				const glm::vec3& cameraPosition = cameraToWorldMatrix[3];
-				const glm::mat4& modelViewProjectionMatrix = glm::inverse(projectionMatrix[eye]) * cameraToWorldMatrix * objectToWorldMatrix;
+			const glm::vec3& cameraPosition = cameraToWorldMatrix[3].xyz();
+			const glm::mat4& modelViewProjectionMatrix = glm::inverse(projectionMatrix[eye]) * cameraToWorldMatrix * objectToWorldMatrix;
+			const glm::mat3& objectToWorldNormalMatrix = glm::transpose(glm::inverse(glm::mat3(objectToWorldMatrix)));
 
-                // mat3 is passed to openGL as if it was mat4 due to padding rules.
-                for (int row = 0; row < 3; ++row) {
-                    memcpy(ptr + uniformOffset[0] + sizeof(float) * 4 * row, glm::value_ptr(objectToWorldNormalMatrix) + row * 3, sizeof(float) * 3);
-                }
+            glBindBufferBase(GL_UNIFORM_BUFFER, uniformBindingPoint, uniformBlock);
 
-                memcpy(ptr + uniformOffset[1], glm::value_ptr(objectToWorldMatrix), sizeof(objectToWorldMatrix));
+            GLubyte* ptr = (GLubyte*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
 
-				light_system->render(shader, objectToWorldMatrix, ptr, uniformOffset);
+			light_system->render(shader, objectToWorldMatrix, ptr, uniformOffset);
 
-				// Draw the map
-				glPolygonMode(GL_FRONT_AND_BACK, (wireframe ? GL_LINE : GL_FILL));
-				map->render(shader, objectToWorldMatrix, cameraPosition, ptr, uniformOffset);
+			// Draw the map
+			glPolygonMode(GL_FRONT_AND_BACK, (wireframe ? GL_LINE : GL_FILL));
+			map->render(shader, objectToWorldMatrix, cameraPosition, ptr, uniformOffset);
 
+            // mat3 is passed to openGL as if it was mat4 due to padding rules.
+            for (int row = 0; row < 3; ++row) {
+                memcpy(ptr + uniformOffset[0] + sizeof(float) * 4 * row, glm::value_ptr(objectToWorldNormalMatrix) + row * 3, sizeof(float) * 3);
+            }
+
+            memcpy(ptr + uniformOffset[1], glm::value_ptr(objectToWorldMatrix), sizeof(objectToWorldMatrix));
                 
-                memcpy(ptr + uniformOffset[2], glm::value_ptr(modelViewProjectionMatrix), sizeof(modelViewProjectionMatrix));
+            memcpy(ptr + uniformOffset[2], glm::value_ptr(modelViewProjectionMatrix), sizeof(modelViewProjectionMatrix));
                 
-                memcpy(ptr + uniformOffset[3], &cameraPosition.x, sizeof(glm::vec4));
+            memcpy(ptr + uniformOffset[3], &cameraPosition, sizeof(glm::vec3));
 
-				glUnmapBuffer(GL_UNIFORM_BUFFER);
+			glUnmapBuffer(GL_UNIFORM_BUFFER);
 
 #           ifdef _VR
             {

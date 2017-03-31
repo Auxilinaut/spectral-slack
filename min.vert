@@ -23,7 +23,7 @@ uniform Uniform {
 void main () {
     vertexOutput.texCoord   = texCoord;
     // TODO objectToWorldNormalMatrix is not being passed correctly
-    vertexOutput.normal     = normalize(object.objectToWorldNormalMatrix * normal);
+    vertexOutput.normal     = object.objectToWorldNormalMatrix * normal;
    vertexOutput.position   = (object.objectToWorldMatrix * vec4(position, 1.0)).xyz;
 
     gl_Position = object.modelViewProjectionMatrix * vec4(position, 1.0);
