@@ -1,6 +1,6 @@
 #pragma once
 /**
-  Credit to Morgan McGuire, http://graphics.cs.williams.edu
+  Credit to Morgan McGuire
 
   This requires the bin, lib, and headers directories from the 
   OpenVR SDK: https://github.com/ValveSoftware/openvr

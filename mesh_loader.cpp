@@ -1,13 +1,8 @@
 
 // ------------------------------------------------ -------------------------------------------------
-// Description: Mesh Loader, translated by Google
+// Description: Mesh Loader
 //
-//
-// Note:
-// You are encouraged to write your own parser for other formats. Suggested formats: ply, off
-//
-// Author: Lucian Petrescu
-// Date: September 28, 2013
+// Credit to Lucian Petrescu
 // ------------------------------------------------ -------------------------------------------------
 
 #pragma once

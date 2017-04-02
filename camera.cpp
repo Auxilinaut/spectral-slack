@@ -1,7 +1,5 @@
 /**
-* SPG Assignment #2 - 2013
-*
-* Author: Stamate Cosmin, 342C4
+* Credit to Stamate Cosmin
 *
 * Description: Camera entity, based on the movable class. Used mainly for
 * the principal viewer camera.

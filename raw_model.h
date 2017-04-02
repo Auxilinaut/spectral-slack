@@ -1,7 +1,5 @@
 /**
-* SPG Assignment #2 - 2013
-*
-* Author: Stamate Cosmin, 342C4
+* Credit to Stamate Cosmin
 *
 * Description: Raw model factory. The factory is a singleton to ensure that
 * models are loaded a single time throughout the program.

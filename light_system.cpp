@@ -1,7 +1,5 @@
 /**
-* SPG Assignment #2 - 2013
-*
-* Author: Stamate Cosmin, 342C4
+* Credit to Stamate Cosmin
 *
 * Description: Light ensemble system, controlling all the light sources and
 * the main light source, the sun.

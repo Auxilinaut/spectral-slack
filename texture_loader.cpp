@@ -1,18 +1,7 @@
 //-------------------------------------------------------------------------------------------------
-// Description: header in which functions are implemented for loading textures from BMP files, translated by Google
+// Description: header in which functions are implemented for loading textures from BMP files
 //
-// Note: LoadTextureBMP - function that you will use to load textures.
-// Works with OpenGL functions to create a texture (more than a picture!)
-// Function is to be used
-// ---
-// _loadImageBMP - Upload image data, independent of OpenGL
-// Function support role
-//
-// Note 2:
-// You are encouraged to write your own parsele other formats. Suggested format: ppm, tga
-//
-// Author: Lucian Petrescu
-// Date: September 28, 2013
+// Credit to Lucian Petrescu
 //-------------------------------------------------------------------------------------------------
 
 #pragma once
@@ -22,9 +11,6 @@ namespace texture{
     //definition forward
     unsigned char* _loadBMPFile(const std::string &filename, unsigned int &width, unsigned int &height);
 
-	// Load a BMP image and create her textured
-	// This is the function that you will call
-	// Returns id texture
     unsigned int loadTextureBMP(const std::string &filename){
         unsigned int width, height;
         unsigned char* data = _loadBMPFile(filename, width, height);
@@ -36,15 +22,15 @@ namespace texture{
 
         //filtration
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        /*float maxAnisotropy;
+        /*glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        float maxAnisotropy;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);*/
 
-		// Textures when working with multiple non-sized 4 rows reader must do
-		// Load the textures in OpenGL that working memory aligned to 1 (default is 4)
+		// Textures when working with multiple non-sized 4 rows reader must
+		// load the textures in OpenGL that working memory aligned to 1 (default is 4)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
         //generates texture
@@ -94,7 +80,7 @@ namespace texture{
             height = 0;
             return NULL;
         }
-        std::cout << "Texture Loader: Incarc fisierul " << filename << std::endl;
+        std::cout << "Texture Loader: Loaded file " << filename << std::endl;
 
         header h; header_info h_info;
         file.read((char*)&(h.type[0]), sizeof(char));

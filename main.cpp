@@ -1,8 +1,9 @@
 /**
-   OpenVR base by Morgan McGuire: http://graphics.cs.williams.edu
+   OpenVR base by Morgan McGuire
+   Terrain and light PoC by Stamate Cosmin
   
   Reference Frames:
-      Object: The object being rendered (the Shape in this example) relative to its own origin
+      Object: The object being rendered relative to its own origin
       World:  Global reference frame
       Body:   Controlled by keyboard and mouse
       Head:   Controlled by tracking (or fixed relative to the body for non-VR)
@@ -224,7 +225,7 @@ int main(const int argc, const char* argv[]) {
 
         const float nearPlaneZ = 0.1f;
         const float farPlaneZ = 100.0f;
-        const float verticalFieldOfView = 45.0f * pi / 180.0f;
+		const float verticalFieldOfView = 45.0f; //* pi / 180.0f;
 		
 		getTime(&previous_time, &time); //WHAT YEAR IS IT
 
@@ -293,18 +294,19 @@ int main(const int argc, const char* argv[]) {
             // Bind uniforms in the interface block
 
 			const glm::vec3& cameraPosition = cameraToWorldMatrix[3].xyz();
-			const glm::mat4& modelViewProjectionMatrix = glm::inverse(projectionMatrix[eye]) * cameraToWorldMatrix * objectToWorldMatrix;
-			const glm::mat3& objectToWorldNormalMatrix = glm::transpose(glm::inverse(glm::mat3(objectToWorldMatrix)));
 
             glBindBufferBase(GL_UNIFORM_BUFFER, uniformBindingPoint, uniformBlock);
 
             GLubyte* ptr = (GLubyte*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
 
-			light_system->render(shader, objectToWorldMatrix, ptr, uniformOffset);
+			light_system->render(shader, glm::mat4(1.0f), ptr, uniformOffset);
 
 			// Draw the map
 			glPolygonMode(GL_FRONT_AND_BACK, (wireframe ? GL_LINE : GL_FILL));
-			map->render(shader, objectToWorldMatrix, cameraPosition, ptr, uniformOffset);
+			map->render(shader, glm::mat4(1.0f), camera->getPosition(), ptr, uniformOffset);
+			// REFACTOR THIS to send through modelfactory render
+			const glm::mat3& objectToWorldNormalMatrix = glm::inverse(glm::transpose(glm::mat3(objectToWorldMatrix)));
+			const glm::mat4& modelViewProjectionMatrix = glm::inverse(projectionMatrix[eye]) * cameraToWorldMatrix * objectToWorldMatrix;
 
             // mat3 is passed to openGL as if it was mat4 due to padding rules.
             for (int row = 0; row < 3; ++row) {
@@ -353,13 +355,27 @@ int main(const int argc, const char* argv[]) {
 
         // WASD keyboard movement
         const float cameraMoveSpeed = 0.01f;
-        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_W)) { bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, -cameraMoveSpeed, 0)); }
-        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_S)) { bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, +cameraMoveSpeed, 0)); }
-        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_A)) { bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(-cameraMoveSpeed, 0, 0, 0)); }
-        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_D)) { bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(+cameraMoveSpeed, 0, 0, 0)); }
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_W)) {
+			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, -cameraMoveSpeed, 0));
+			camera->setControl(MOVABLE_CONTROL_FORWARD);
+		}
+        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_S)) { 
+			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, +cameraMoveSpeed, 0)); 
+			camera->setControl(MOVABLE_CONTROL_BACKWARD);
+		}
+        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_A)) { 
+			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(-cameraMoveSpeed, 0, 0, 0));
+			camera->setControl(MOVABLE_CONTROL_LEFT);
+		}
+        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_D)) { 
+			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(+cameraMoveSpeed, 0, 0, 0));
+			camera->setControl(MOVABLE_CONTROL_RIGHT);
+		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_C)) { bodyTranslation.y -= cameraMoveSpeed; }
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Q)) { light_system->addLight(); }
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_E)) { light_system->switchType(); }
         if ((GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE)) || (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Z))) { bodyTranslation.y += cameraMoveSpeed; }
-
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_G)) { wireframe = !wireframe; }
         // Keep the camera above the ground
         if (bodyTranslation.y < 0.01f) { bodyTranslation.y = 0.01f; }
 
@@ -379,7 +395,12 @@ int main(const int argc, const char* argv[]) {
             inDrag = false;
         }
 
-        ++timer;
+		// Move the camera based on registered mouse movement and keyboard.
+		camera->move(time, bodyTranslation.yz());
+
+		// Set the light system's relative point and move the light system.
+		light_system->setRelativePosition(camera->getPosition());
+		light_system->move(time, bodyTranslation.y);
     }
 
 #   ifdef _VR
