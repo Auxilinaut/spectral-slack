@@ -30,13 +30,13 @@ _RawModel::~_RawModel() {
 void _RawModel::render(RawModelMaterial* material,
     glm::vec3 position, glm::vec3 size,
     glm::mat4 model_matrix, glm::mat4 transform_matrix,
-    unsigned int shader, GLubyte* ptr, GLint uniformOffset[]) {
+    unsigned int shader, glm::mat4* objectToWorldMatrix,  glm::mat4 projectionMatrix, glm::mat4 cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix) {
     // Delegate to the generic render function.
     RawModelFactory::render(this->vao, this->index_count,
         material, position,
         glm::vec3(size.x / this->info->size.x, size.y / this->info->size.y,
         size.z / this->info->size.z),
-        model_matrix, transform_matrix, shader, ptr, uniformOffset);
+        model_matrix, transform_matrix, shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix);
 }
 
 // Instantiate all models.
@@ -74,13 +74,13 @@ void RawModelFactory::destructModelFactory() {
 void RawModelFactory::renderModel(int model_id, RawModelMaterial* material,
     glm::vec3 position, glm::vec3 size,
     glm::mat4 model_matrix, glm::mat4 transform_matrix,
-    unsigned int shader, GLubyte* ptr, GLint uniformOffset[]) {
+    unsigned int shader, glm::mat4* objectToWorldMatrix, glm::mat4 projectionMatrix, glm::mat4 cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix) {
     // Make sure the models are loaded first.
     RawModelFactory::instantiateModelFactory();
 
     // Render the model.
     RawModelFactory::models[model_id]->render(material, position, size,
-        model_matrix, transform_matrix, shader, ptr, uniformOffset);
+        model_matrix, transform_matrix, shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix);
 }
 
 // Render a generic model based on its Vertex Array Object.
@@ -88,7 +88,7 @@ void RawModelFactory::render(unsigned int vao, unsigned int index_count,
     RawModelMaterial* material,
     glm::vec3 position, glm::vec3 size,
     glm::mat4 model_matrix, glm::mat4 transform_matrix,
-    unsigned int shader, GLubyte* ptr, GLint uniformOffset[]) {
+    unsigned int shader, glm::mat4* objectToWorldMatrix, glm::mat4 projectionMatrix, glm::mat4 cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix) {
     glm::mat4 scale_matrix, translation_matrix;
 
     // Send material data to the shader.
@@ -104,8 +104,8 @@ void RawModelFactory::render(unsigned int vao, unsigned int index_count,
         material->ks.r, material->ks.g, material->ks.b, material->ks.a);
 
     // Compute matrices for scaling and translation.
-    scale_matrix = glm::scale(glm::mat4(), glm::vec3(size.x, size.y, size.z));
-    translation_matrix = glm::translate(glm::mat4(), position);
+    //scale_matrix = glm::scale(glm::mat4(), glm::vec3(size.x, size.y, size.z));
+    //translation_matrix = glm::translate(model_matrix, position);
 
     // Send model rendering info via uniform block to shader.
     /*glUniformMatrix4fv(
@@ -113,8 +113,12 @@ void RawModelFactory::render(unsigned int vao, unsigned int index_count,
 		glm::value_ptr(model_matrix * translation_matrix * transform_matrix *
 		scale_matrix));*/
 
-	memcpy(ptr + uniformOffset[1], glm::value_ptr(model_matrix * translation_matrix * transform_matrix *
-		scale_matrix), sizeof(glm::mat4));
+	/*memcpy(ptr + uniformOffset[1], glm::value_ptr(model_matrix * translation_matrix * transform_matrix *
+	scale_matrix), sizeof(glm::mat4));*/
+
+	*objectToWorldMatrix = model_matrix * translation_matrix * transform_matrix *
+		scale_matrix;
+	*modelViewProjectionMatrix = projectionMatrix * glm::inverse(cameraToWorldMatrix) * *objectToWorldMatrix;
 
 
     // Bind VAO buffer and call draw the object.

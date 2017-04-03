@@ -69,7 +69,7 @@ int main(const int argc, const char* argv[]) {
 
     window = initOpenGL(windowWidth, windowHeight, "minimalOpenGL");
         
-    glm::vec3 bodyTranslation(0.0f, 1.6f, 5.0f);
+    glm::vec3 bodyTranslation = glm::vec3();
     glm::vec3 bodyRotation;
 
     //////////////////////////////////////////////////////////////////////
@@ -257,7 +257,6 @@ int main(const int argc, const char* argv[]) {
             glClearColor(0.1f, 0.2f, 0.3f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			//objectToWorldMatrix = glm::translate(objectToWorldMatrix,glm::vec3(0,.5,0)) * glm::rotate(objectToWorldMatrix, pi/3.0f, glm::vec3(0, 1, 0));
             const glm::mat4& cameraToWorldMatrix       = headToWorldMatrix * eyeToHead[eye];
 
             const glm::vec3& light = glm::normalize(glm::vec3(1.0f, 0.5f, 0.2f));
@@ -268,12 +267,12 @@ int main(const int argc, const char* argv[]) {
 			//2nd shader floor and sky drawer
 			drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
 
+			glUseProgram(shader);
+
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LESS);
 			glEnable(GL_CULL_FACE);
 			glDepthMask(GL_TRUE);
-
-			glUseProgram(shader);
 
 			// uniform colorTexture - sampler binding
 			const GLint colorTextureUnit = 0;
@@ -291,29 +290,34 @@ int main(const int argc, const char* argv[]) {
 
 
 
-            // Bind uniforms in the interface block
+            // ~~~~~~~~~~ Bind uniforms in the interface block, render terrain and lights ~~~~~~~~~~
 
 			const glm::vec3& cameraPosition = cameraToWorldMatrix[3].xyz();
+			const glm::mat4 model_matrix = glm::mat4();
+			glm::mat4& modelViewProjectionMatrix = glm::mat4();
 
             glBindBufferBase(GL_UNIFORM_BUFFER, uniformBindingPoint, uniformBlock);
 
             GLubyte* ptr = (GLubyte*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
 
-			light_system->render(shader, glm::mat4(1.0f), ptr, uniformOffset);
+
+			light_system->render(shader, model_matrix, &objectToWorldMatrix, projectionMatrix[eye], cameraToWorldMatrix, &modelViewProjectionMatrix);
 
 			// Draw the map
 			glPolygonMode(GL_FRONT_AND_BACK, (wireframe ? GL_LINE : GL_FILL));
-			map->render(shader, glm::mat4(1.0f), camera->getPosition(), ptr, uniformOffset);
+			map->render(shader, model_matrix, cameraPosition, &objectToWorldMatrix, projectionMatrix[eye], cameraToWorldMatrix, &modelViewProjectionMatrix);
+
+
 			// REFACTOR THIS to send through modelfactory render
-			const glm::mat3& objectToWorldNormalMatrix = glm::inverse(glm::transpose(glm::mat3(objectToWorldMatrix)));
-			const glm::mat4& modelViewProjectionMatrix = glm::inverse(projectionMatrix[eye]) * cameraToWorldMatrix * objectToWorldMatrix;
+			//const glm::mat3& objectToWorldNormalMatrix = glm::inverse(glm::transpose(glm::mat3(objectToWorldMatrix)));
+			//modelViewProjectionMatrix = projectionMatrix[eye] * glm::inverse(cameraToWorldMatrix) * objectToWorldMatrix;
 
             // mat3 is passed to openGL as if it was mat4 due to padding rules.
-            for (int row = 0; row < 3; ++row) {
+            /*for (int row = 0; row < 3; ++row) {
                 memcpy(ptr + uniformOffset[0] + sizeof(float) * 4 * row, glm::value_ptr(objectToWorldNormalMatrix) + row * 3, sizeof(float) * 3);
-            }
+            }*/
 
-            memcpy(ptr + uniformOffset[1], glm::value_ptr(objectToWorldMatrix), sizeof(objectToWorldMatrix));
+			memcpy(ptr + uniformOffset[1], glm::value_ptr(objectToWorldMatrix), sizeof(objectToWorldMatrix));
                 
             memcpy(ptr + uniformOffset[2], glm::value_ptr(modelViewProjectionMatrix), sizeof(modelViewProjectionMatrix));
                 
@@ -376,7 +380,8 @@ int main(const int argc, const char* argv[]) {
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_E)) { light_system->switchType(); }
         if ((GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE)) || (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Z))) { bodyTranslation.y += cameraMoveSpeed; }
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_G)) { wireframe = !wireframe; }
-        // Keep the camera above the ground
+        
+		// Keep the camera above the ground
         if (bodyTranslation.y < 0.01f) { bodyTranslation.y = 0.01f; }
 
         static bool inDrag = false;

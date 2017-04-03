@@ -85,7 +85,6 @@ namespace mesh{
     }
 
     //-------------------------------------------------------------------------------------------------
-    //follows parsing code ...
 
     //helper funcs
     float _stringToFloat(const std::string &source){

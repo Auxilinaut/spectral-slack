@@ -46,7 +46,7 @@ public:
     ~_RawModel();
     void render(RawModelMaterial* material, glm::vec3 position, glm::vec3 size,
         glm::mat4 model_matrix, glm::mat4 transform_matrix,
-        unsigned int shader, GLubyte* ptr, GLint uniformOffset[]);
+        unsigned int shader, glm::mat4* objectToWorldMatrix, glm::mat4 projectionMatrix, glm::mat4 cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix);
 
 private:
     const RawModelInfo* info;
@@ -65,11 +65,11 @@ public:
         RawModelMaterial* material,
         glm::vec3 position, glm::vec3 size,
         glm::mat4 model_matrix, glm::mat4 transform_matrix,
-        unsigned int shader, GLubyte* ptr, GLint uniformOffset[]);
+        unsigned int shader, glm::mat4* objectToWorldMatrix, glm::mat4 projectionMatrix, glm::mat4 cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix);
     static void renderModel(int model_id, RawModelMaterial* material,
         glm::vec3 position, glm::vec3 size,
         glm::mat4 model_matrix, glm::mat4 transform_matrix,
-        unsigned int shader, GLubyte* ptr, GLint uniformOffset[]);
+        unsigned int shader, glm::mat4* objectToWorldMatrix, glm::mat4 projectionMatrix, glm::mat4 cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix);
 
 private:
     static RawModelFactory* instance;
