@@ -70,7 +70,7 @@ void Map::setMode(unsigned int mode) { this->mode = mode; }
 // Render the block on the correct position around the camera.
 // We always render 4 blocks, that cover the fog radius completely.
 void Map::render(unsigned int shader, glm::mat4 model_matrix,
-    glm::vec3 position, glm::mat4* objectToWorldMatrix, glm::mat4 projectionMatrix, glm::mat4 cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix) {
+    glm::vec3 position, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]) {
     MapBlock* block = this->blocks[this->mode];
     glm::vec3 direction = position;
 
@@ -104,25 +104,25 @@ void Map::render(unsigned int shader, glm::mat4 model_matrix,
         RawModelFactory::render(block->vao, block->total_index_count,
             (RawModelMaterial*)materials[this->mode],
             start, glm::vec3(1, 1, 1),
-            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix);
+            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
 
         RawModelFactory::render(block->vao, block->total_index_count,
             (RawModelMaterial*)materials[this->mode],
             start + glm::vec3(-this->length, 0, 0),
             glm::vec3(1, 1, 1),
-            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix);
+            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
 
         RawModelFactory::render(block->vao, block->total_index_count,
             (RawModelMaterial*)materials[this->mode],
             start + glm::vec3(0, 0, -this->length),
             glm::vec3(1, 1, 1),
-            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix);
+            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
 
         RawModelFactory::render(block->vao, block->total_index_count,
             (RawModelMaterial*)materials[this->mode],
             start + glm::vec3(-this->length, 0, -this->length),
             glm::vec3(1, 1, 1),
-            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix);
+            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
 
         // Inform the shader we're no longer drawing a mountain.
         glUniform1i(glGetUniformLocation(shader, "draw_mountain"), false);

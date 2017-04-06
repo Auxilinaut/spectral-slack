@@ -24,7 +24,7 @@ Sun::~Sun() {
 // For realism, it is always facing the the camera.
 // The sun is also placed always at a fixed position, relative to the camera,
 // so it always stays away enough from the camera.
-void Sun::render(unsigned int shader, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4 projectionMatrix, glm::mat4 cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix) {
+void Sun::render(unsigned int shader, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]) {
     // Update the sun's position.
     glm::vec3 sun_position = this->position +
         glm::vec3(this->camera->position.x, 0, 0);
@@ -63,7 +63,7 @@ void Sun::render(unsigned int shader, glm::mat4 model_matrix, glm::mat4* objectT
         (RawModelMaterial*)&SUN_MATERIAL,
         sun_position,
         glm::vec3(SUN_SIZE, SUN_SIZE, 1),
-        model_matrix, rotation_matrix, shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix);
+        model_matrix, rotation_matrix, shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
 
     // Notify the shader we're no longer rendering the sun plane.
     glUniform1i(glGetUniformLocation(shader, "draw_sun"), false);
@@ -93,17 +93,17 @@ glm::vec3 Light::getPosition() { return this->position; }
 
 // Render a simple model to give a hint as what the light is.
 void Light::render(unsigned int shader, glm::vec3 offset,
-    glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4 projectionMatrix, glm::mat4 cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix) {
+    glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]) {
     // If it is a point light, draw a sphere.
     if (this->type == LIGHT_OMNI) {
         RawModelFactory::renderModel(RAW_MODEL_SPHERE, material,
             this->position + offset, this->size, model_matrix, glm::mat4(),
-            shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix);
+            shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
     } // If it is a spotlight, draw a cone.
     else {
         RawModelFactory::renderModel(RAW_MODEL_CONE, material,
             this->position + offset, this->size, model_matrix, glm::mat4(),
-            shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix);
+            shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
     }
 }
 
@@ -203,11 +203,11 @@ void LightSystem::move(float time, float angle_y) {
 void LightSystem::switchFog() { this->fog = !this->fog; }
 
 // Render the light system.
-void LightSystem::render(unsigned int shader, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4 projectionMatrix, glm::mat4 cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix) {
+void LightSystem::render(unsigned int shader, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]) {
     glm::vec3 offset = this->relative_position;
 
     // First render the sun's model and light.
-    this->sun->render(shader, model_matrix, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix);
+    this->sun->render(shader, model_matrix, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
 
     // Turn the fog on or off and send fog variables.
     glUniform1i(glGetUniformLocation(shader, "fog_switch"), this->fog);
@@ -230,7 +230,7 @@ void LightSystem::render(unsigned int shader, glm::mat4 model_matrix, glm::mat4*
 
     // Render all the individual light models.
     for (int i = 0; i < this->light_count; i++) {
-        this->lights[i]->render(shader, offset, model_matrix, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix);
+        this->lights[i]->render(shader, offset, model_matrix, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
         this->light_positions[i] = offset + this->lights[i]->getPosition();
     }
 
