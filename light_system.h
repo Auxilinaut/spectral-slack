@@ -75,7 +75,7 @@ public:
     Sun(Camera* camera);
     ~Sun();
 
-    void render(unsigned int shader, glm::mat4 model_matrix, GLubyte* ptr, GLint uniformOffset[]);
+    void render(unsigned int shader, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]);
 private:
 	Camera* camera;
     unsigned int texture;
@@ -89,7 +89,7 @@ public:
 
     void setType(unsigned int type);
     void move(glm::vec3 movement);
-    void render(unsigned int shader, glm::vec3 offset, glm::mat4 model_matrix, GLubyte* ptr, GLint uniformOffset[]);
+    void render(unsigned int shader, glm::vec3 offset, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]);
 
     glm::vec3 getPosition();
 
@@ -111,7 +111,7 @@ public:
     void switchFog();
 
     void move(float time, float angle_y);
-    void render(unsigned int shader, glm::mat4 model_matrix, GLubyte* ptr, GLint uniformOffset[]);
+    void render(unsigned int shader, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]);
 
 private:
     glm::vec3 relative_position;
