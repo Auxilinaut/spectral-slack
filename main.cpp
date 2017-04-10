@@ -117,7 +117,7 @@ int main(const int argc, const char* argv[]) {
 	Camera* camera = new Camera();
 
 	LightSystem* light_system = new LightSystem(LIGHT_OMNI, camera);
-	//light_system->switchFog();
+	light_system->switchFog();
 
 	Map* map = new Map(glm::vec3(0.0f,0.0f,0.0f), FOG_END_RADIUS, MAP_MODE_BASE);
 	map->setMode(MAP_MODE_FRACTAL);
@@ -228,14 +228,27 @@ int main(const int argc, const char* argv[]) {
 	/////////////////////////////////////////////////////////////////////
     // Main loop
     int timer = 0;
+	float frameTimes[100];
+	int totalFrames = 0;
+	float averageFrame;
+
     while (! glfwWindowShouldClose(window)) {
         assert(glGetError() == GL_NONE);
 
         const float nearPlaneZ = 0.1f;
-        const float farPlaneZ = 100.0f;
+        const float farPlaneZ = 5000.0f;
 		const float verticalFieldOfView = glm::radians(45.0f);
 		
 		getTime(&previous_time, &time); //WHAT YEAR IS IT
+		frameTimes[totalFrames++%100] = time;
+		if (totalFrames == 100) {
+			averageFrame = 0;
+			for (int i = 0; i < 100; i++) {
+				averageFrame += frameTimes[i];
+			}
+			printf("Avg time per frame: %f\n", averageFrame / 100);
+			totalFrames = 0;
+		}
 
 #       ifdef _VR
             getEyeTransformations(hmd, trackedDevicePose, nearPlaneZ, farPlaneZ, headToBodyMatrix.data, eyeToHead[0].data, eyeToHead[1].data, projectionMatrix[0].data, projectionMatrix[1].data);
@@ -275,7 +288,7 @@ int main(const int argc, const char* argv[]) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			//2nd shader floor and sky drawer
-			drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(headToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
+			drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
 
 			glUseProgram(shader);
 			// Set drawing mode to fill, for other elements than the map.
@@ -303,7 +316,7 @@ int main(const int argc, const char* argv[]) {
 
             // ~~~~~~~~~~ Bind uniforms in the interface block, render terrain and lights ~~~~~~~~~~
 
-			cameraPosition = glm::vec3(headToWorldMatrix[3]);
+			cameraPosition = glm::vec3(cameraToWorldMatrix[3]);
 			model_matrix = glm::mat4();
 			modelViewProjectionMatrix = glm::mat4();
 
@@ -361,22 +374,22 @@ int main(const int argc, const char* argv[]) {
         }
 
         // WASD keyboard movement
-        const float cameraMoveSpeed = 0.1f;
+        const float cameraMoveSpeed = 1.0f;
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_W)) {
 			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, -cameraMoveSpeed, 0));
-			camera->setControl(MOVABLE_CONTROL_FORWARD);
+			//camera->setControl(MOVABLE_CONTROL_FORWARD);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_S)) { 
 			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, +cameraMoveSpeed, 0)); 
-			camera->setControl(MOVABLE_CONTROL_BACKWARD);
+			//camera->setControl(MOVABLE_CONTROL_BACKWARD);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_A)) { 
 			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(-cameraMoveSpeed, 0, 0, 0));
-			camera->setControl(MOVABLE_CONTROL_LEFT);
+			//camera->setControl(MOVABLE_CONTROL_LEFT);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_D)) { 
 			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(+cameraMoveSpeed, 0, 0, 0));
-			camera->setControl(MOVABLE_CONTROL_RIGHT);
+			//camera->setControl(MOVABLE_CONTROL_RIGHT);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_C)) { bodyTranslation.y -= cameraMoveSpeed; }
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Q)) { light_system->addLight(); }
@@ -404,8 +417,8 @@ int main(const int argc, const char* argv[]) {
         }
 
 		// Move the camera based on registered mouse movement and keyboard.
-		camera->move(time, bodyTranslation.yz());
-
+		//camera->move(time, bodyTranslation.yz());
+		camera->position = cameraPosition;
 		// Set the light system's relative point and move the light system.
 		light_system->setRelativePosition(camera->getPosition());
 		light_system->move(time, bodyTranslation.y);

@@ -1,5 +1,5 @@
 /**
-  Credit to Morgan McGuire, http://graphics.cs.williams.edu
+  Credit of original goes to Morgan McGuire, http://graphics.cs.williams.edu
 
   Minimal headers emulating a basic set of 3D graphics classes.
 */

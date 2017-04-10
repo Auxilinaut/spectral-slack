@@ -1,5 +1,5 @@
 /**
-* Credit to Stamate Cosmin
+* Credit of original goes to Stamate Cosmin
 *
 * Description: Movable entity on X, Y, Z axes.
 */

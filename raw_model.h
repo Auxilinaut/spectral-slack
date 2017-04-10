@@ -1,5 +1,5 @@
 /**
-* Credit to Stamate Cosmin
+* Credit of original goes to Stamate Cosmin
 *
 * Description: Raw model factory. The factory is a singleton to ensure that
 * models are loaded a single time throughout the program.

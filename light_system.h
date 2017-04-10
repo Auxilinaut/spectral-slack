@@ -1,5 +1,5 @@
 /**
-* Credit to Stamate Cosmin
+* Credit of original goes to Stamate Cosmin
 *
 * Description: Light ensemble system, controlling all the light sources and
 * the main light source, the sun.

@@ -1,5 +1,5 @@
 /**
-* Credit to Stamate Cosmin
+* Credit of original goes to Stamate Cosmin
 *
 * Description: Camera entity, based on the movable class. Used mainly for
 * the principal viewer camera.

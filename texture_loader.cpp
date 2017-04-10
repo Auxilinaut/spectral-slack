@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------------------------
 // Description: header in which functions are implemented for loading textures from BMP files
 //
-// Credit to Lucian Petrescu
+// Credit of original goes to Lucian Petrescu
 //-------------------------------------------------------------------------------------------------
 
 #pragma once

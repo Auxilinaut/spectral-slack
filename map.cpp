@@ -1,5 +1,5 @@
 /**
-* Credit to Stamate Cosmin
+* Credit of original goes to Stamate Cosmin
 *
 * Description: Map generator.
 * The algorithm used in generation is the diamond square fractal generator:
