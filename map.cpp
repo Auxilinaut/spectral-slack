@@ -70,9 +70,9 @@ void Map::setMode(unsigned int mode) { this->mode = mode; }
 // Render the block on the correct position around the camera.
 // We always render 4 blocks, that cover the fog radius completely.
 void Map::render(unsigned int shader, glm::mat4 model_matrix,
-    glm::vec3 position, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]) {
+    glm::vec3 position, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLuint uniformBindingPoint, GLuint uniformBlock, GLint uniformOffset[]) {
     MapBlock* block = this->blocks[this->mode];
-    glm::vec3 direction = position;
+    glm::vec3 direction = glm::vec3((*cameraToWorldMatrix)[3]);
 
     // The start point can be found by dividing the current distance from the
     // origin point by the length of the block, rounding it to the closest
@@ -104,25 +104,25 @@ void Map::render(unsigned int shader, glm::mat4 model_matrix,
         RawModelFactory::render(block->vao, block->total_index_count,
             (RawModelMaterial*)materials[this->mode],
             start, glm::vec3(1, 1, 1),
-            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
+            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
 
         RawModelFactory::render(block->vao, block->total_index_count,
             (RawModelMaterial*)materials[this->mode],
             start + glm::vec3(-this->length, 0, 0),
             glm::vec3(1, 1, 1),
-            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
+            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
 
         RawModelFactory::render(block->vao, block->total_index_count,
             (RawModelMaterial*)materials[this->mode],
             start + glm::vec3(0, 0, -this->length),
             glm::vec3(1, 1, 1),
-            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
+            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
 
         RawModelFactory::render(block->vao, block->total_index_count,
             (RawModelMaterial*)materials[this->mode],
             start + glm::vec3(-this->length, 0, -this->length),
             glm::vec3(1, 1, 1),
-            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
+            model_matrix, glm::mat4(), shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
 
         // Inform the shader we're no longer drawing a mountain.
         glUniform1i(glGetUniformLocation(shader, "draw_mountain"), false);
@@ -172,7 +172,7 @@ void Map::generateTerrain(unsigned int mode, unsigned int square_count) {
     // Compute the color boundaries for the mountains.
     this->boundary_top = glm::vec2(min + range * MAP_BOUNDARY_TOP,
         max * MAP_BOUNDARY_TOP_HIGH);
-    this->boundary_bottom = glm::vec2(min *(MAP_BOUNDARY_BOTTOM_LOW + 1),
+    this->boundary_bottom = glm::vec2(min * (MAP_BOUNDARY_BOTTOM_LOW + 1),
         min + range * MAP_BOUNDARY_BOTTOM);
 
     // Compute normals.

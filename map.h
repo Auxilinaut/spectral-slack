@@ -10,7 +10,7 @@
 #pragma once
 
 #include "glm\glm.hpp"
-#include "mesh_loader.h"
+//#include "mesh_loader.h"
 #include "raw_model.h"
 #include <math.h>
 #include <random>
@@ -102,7 +102,7 @@ public:
 
     void setMode(unsigned int mode);
     void render(unsigned int shader, glm::mat4 model_matrix,
-        glm::vec3 position, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]);
+        glm::vec3 position, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLuint uniformBindingPoint, GLuint uniformBlock, GLint uniformOffset[]);
 
     void generateBase(unsigned int mode, unsigned int square_count);
     void generateTerrain(unsigned int mode, unsigned int square_count);

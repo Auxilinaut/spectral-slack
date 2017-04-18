@@ -116,11 +116,11 @@ int main(const int argc, const char* argv[]) {
 
 	Camera* camera = new Camera();
 
-	LightSystem* light_system = new LightSystem(LIGHT_OMNI, camera);
-	light_system->switchFog();
-
-	Map* map = new Map(glm::vec3(0.0f,0.0f,0.0f), FOG_END_RADIUS, MAP_MODE_BASE);
+	Map* map = new Map(camera->getPosition(), FOG_END_RADIUS, MAP_MODE_BASE);
 	map->setMode(MAP_MODE_FRACTAL);
+
+	LightSystem* light_system = new LightSystem(LIGHT_OMNI, camera);
+	//light_system->switchFog();
 
 	float time;
 	int previous_time = glfwGetTime();
@@ -136,7 +136,7 @@ int main(const int argc, const char* argv[]) {
     const GLint colorTextureUniform = glGetUniformLocation(shader, "colorTexture");
 
     const GLuint uniformBlockIndex = glGetUniformBlockIndex(shader, "Uniform");
-    const GLuint uniformBindingPoint = 5;
+    const GLuint uniformBindingPoint = 1;
     glUniformBlockBinding(shader, uniformBlockIndex, uniformBindingPoint);
 
     GLuint uniformBlock;
@@ -210,7 +210,7 @@ int main(const int argc, const char* argv[]) {
 
 	const float pi = glm::pi<float>();
 
-	// MATRIX 4X4'S
+	// MATRIX 4X4 DELARATIONS
 	
 	glm::mat4& bodyToWorldMatrix = glm::mat4(1.0f);
 	glm::mat4& headToWorldMatrix = glm::mat4(1.0f);
@@ -221,9 +221,15 @@ int main(const int argc, const char* argv[]) {
 	glm::mat4 headToBodyMatrix = glm::mat4(1.0f);
 	glm::mat4 model_matrix = glm::mat4(1.0f);
 
+	// STILL MAKING DECLARATIONS
 
-	glm::mat3& objectToWorldNormalMatrix = glm::inverse(glm::transpose(glm::mat3(objectToWorldMatrix)));
-	glm::vec3& cameraPosition = glm::vec3(headToWorldMatrix[3]);
+	glm::mat3& objectToWorldNormalMatrix = glm::mat3(1.0f);
+	glm::mat4& cameraToWorldMatrix = glm::mat4(1.0f);
+	glm::vec3& cameraPosition = glm::vec3(cameraToWorldMatrix[3]);
+	const float nearPlaneZ = 0.1f;
+	const float farPlaneZ = 10000.0f;
+	const float verticalFieldOfView = glm::radians(45.0f);
+	const glm::vec3& light = glm::normalize(glm::vec3(1.0f, 0.5f, 0.2f));
 	
 	/////////////////////////////////////////////////////////////////////
     // Main loop
@@ -234,10 +240,6 @@ int main(const int argc, const char* argv[]) {
 
     while (! glfwWindowShouldClose(window)) {
         assert(glGetError() == GL_NONE);
-
-        const float nearPlaneZ = 0.1f;
-        const float farPlaneZ = 5000.0f;
-		const float verticalFieldOfView = glm::radians(45.0f);
 		
 		getTime(&previous_time, &time); //WHAT YEAR IS IT
 		frameTimes[totalFrames++%100] = time;
@@ -250,21 +252,21 @@ int main(const int argc, const char* argv[]) {
 			totalFrames = 0;
 		}
 
+
+
 #       ifdef _VR
-            getEyeTransformations(hmd, trackedDevicePose, nearPlaneZ, farPlaneZ, headToBodyMatrix.data, eyeToHead[0].data, eyeToHead[1].data, projectionMatrix[0].data, projectionMatrix[1].data);
+            getEyeTransformations(hmd, trackedDevicePose, nearPlaneZ, farPlaneZ, &glm::transpose(headToBodyMatrix), &glm::transpose(eyeToHead[0]), &glm::transpose(eyeToHead[1]), &glm::transpose(projectionMatrix[0]), &glm::transpose(projectionMatrix[1]));
 #       else
 		projectionMatrix[0] = glm::perspective(verticalFieldOfView, float(framebufferWidth / framebufferHeight), nearPlaneZ, farPlaneZ);
 #       endif
 
         // printf("float nearPlaneZ = %f, farPlaneZ = %f; int width = %d, height = %d;\n", nearPlaneZ, farPlaneZ, framebufferWidth, framebufferHeight);
 
-		bodyToWorldMatrix = glm::mat4(1.0f);
-		headToWorldMatrix = glm::mat4(1.0f);
-		objectToWorldMatrix = glm::mat4(1.0f);
+		
 		cameraPosition = glm::vec3(headToWorldMatrix[3]);
 		model_matrix = glm::mat4(1.0f);
 		modelViewProjectionMatrix = glm::mat4(1.0f);
-		objectToWorldNormalMatrix = glm::inverse(glm::transpose(glm::mat3(objectToWorldMatrix)));
+		//objectToWorldNormalMatrix = glm::inverse(glm::transpose(glm::mat3(objectToWorldMatrix)));
 
 		bodyToWorldMatrix = //view
             glm::translate(bodyToWorldMatrix, bodyTranslation) *
@@ -281,17 +283,15 @@ int main(const int argc, const char* argv[]) {
             glClearColor(0.1f, 0.2f, 0.3f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            glm::mat4& cameraToWorldMatrix = headToWorldMatrix * eyeToHead[eye];
+			cameraToWorldMatrix = headToWorldMatrix * eyeToHead[eye];
 
-            const glm::vec3& light = glm::normalize(glm::vec3(1.0f, 0.5f, 0.2f));
-
+			// Set drawing mode to fill, for other elements than the map.
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-			//2nd shader floor and sky drawer
-			drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
+			//2nd shader sky drawer
+			drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(headToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
 
 			glUseProgram(shader);
-			// Set drawing mode to fill, for other elements than the map.
 
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LESS);
@@ -316,34 +316,22 @@ int main(const int argc, const char* argv[]) {
 
             // ~~~~~~~~~~ Bind uniforms in the interface block, render terrain and lights ~~~~~~~~~~
 
-			cameraPosition = glm::vec3(cameraToWorldMatrix[3]);
-			model_matrix = glm::mat4();
-			modelViewProjectionMatrix = glm::mat4();
+			cameraPosition = glm::vec3(headToWorldMatrix[3]);
+			model_matrix = glm::mat4(1.0f);
+			modelViewProjectionMatrix = glm::mat4(1.0f);
+			bodyToWorldMatrix = glm::mat4(1.0f);
+			headToWorldMatrix = glm::mat4(1.0f);
+			objectToWorldMatrix = glm::mat4(1.0f);
 
-            glBindBufferBase(GL_UNIFORM_BUFFER, uniformBindingPoint, uniformBlock);
-
-            GLubyte* ptr = (GLubyte*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-
-
-			light_system->render(shader, model_matrix, &objectToWorldMatrix, &projectionMatrix[eye], &cameraToWorldMatrix, &modelViewProjectionMatrix, &objectToWorldNormalMatrix, ptr, uniformOffset);
+			light_system->render(shader, model_matrix, &objectToWorldMatrix, &projectionMatrix[eye], &cameraToWorldMatrix, &modelViewProjectionMatrix, &objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
 
 			// Draw the map
 			glPolygonMode(GL_FRONT_AND_BACK, (wireframe ? GL_LINE : GL_FILL));
-			map->render(shader, model_matrix, cameraPosition, &objectToWorldMatrix, &projectionMatrix[eye], &cameraToWorldMatrix, &modelViewProjectionMatrix, &objectToWorldNormalMatrix, ptr, uniformOffset);
-
-			/*
-			
-			modelViewProjectionMatrix = projectionMatrix[eye] * glm::inverse(cameraToWorldMatrix) * objectToWorldMatrix;
-			*/
-
-			
-            
-
-			glUnmapBuffer(GL_UNIFORM_BUFFER);
+			map->render(shader, model_matrix, cameraPosition, &objectToWorldMatrix, &projectionMatrix[eye], &cameraToWorldMatrix, &modelViewProjectionMatrix, &objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
 
 #           ifdef _VR
             {
-                const vr::Texture_t tex = { reinterpret_cast<void*>(intptr_t(colorRenderTarget[eye])), vr::API_OpenGL, vr::ColorSpace_Gamma };
+                const vr::Texture_t tex = { reinterpret_cast<void*>(intptr_t(colorRenderTarget[eye])) };
                 vr::VRCompositor()->Submit(vr::EVREye(eye), &tex);
             }
 #           endif
@@ -374,21 +362,21 @@ int main(const int argc, const char* argv[]) {
         }
 
         // WASD keyboard movement
-        const float cameraMoveSpeed = 1.0f;
+        const float cameraMoveSpeed = 5.0f;
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_W)) {
-			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, -cameraMoveSpeed, 0));
+			bodyTranslation += glm::vec3(cameraToWorldMatrix * glm::vec4(0, 0, -cameraMoveSpeed, 0));
 			//camera->setControl(MOVABLE_CONTROL_FORWARD);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_S)) { 
-			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, +cameraMoveSpeed, 0)); 
+			bodyTranslation += glm::vec3(cameraToWorldMatrix * glm::vec4(0, 0, +cameraMoveSpeed, 0));
 			//camera->setControl(MOVABLE_CONTROL_BACKWARD);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_A)) { 
-			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(-cameraMoveSpeed, 0, 0, 0));
+			bodyTranslation += glm::vec3(cameraToWorldMatrix * glm::vec4(-cameraMoveSpeed, 0, 0, 0));
 			//camera->setControl(MOVABLE_CONTROL_LEFT);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_D)) { 
-			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(+cameraMoveSpeed, 0, 0, 0));
+			bodyTranslation += glm::vec3(cameraToWorldMatrix * glm::vec4(+cameraMoveSpeed, 0, 0, 0));
 			//camera->setControl(MOVABLE_CONTROL_RIGHT);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_C)) { bodyTranslation.y -= cameraMoveSpeed; }
@@ -396,9 +384,10 @@ int main(const int argc, const char* argv[]) {
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_E)) { light_system->switchType(); }
         if ((GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE)) || (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Z))) { bodyTranslation.y += cameraMoveSpeed; }
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_G)) { wireframe = !wireframe; }
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_F)) { light_system->switchFog(); }
         
 		// Keep the camera above the ground
-        if (bodyTranslation.y < 0.01f) { bodyTranslation.y = 0.01f; }
+        //if (bodyTranslation.y < 0.01f) { bodyTranslation.y = 0.01f; }
 
         static bool inDrag = false;
         const float cameraTurnSpeed = 0.005f;
@@ -416,20 +405,16 @@ int main(const int argc, const char* argv[]) {
             inDrag = false;
         }
 
-		// Move the camera based on registered mouse movement and keyboard.
-		//camera->move(time, bodyTranslation.yz());
 		camera->position = cameraPosition;
-		// Set the light system's relative point and move the light system.
-		light_system->setRelativePosition(camera->getPosition());
-		light_system->move(time, bodyTranslation.y);
-    }
 
+    }
+	
 #   ifdef _VR
         if (hmd != nullptr) {
             vr::VR_Shutdown();
         }
 #   endif
-
+	
 	// Destructors
 	glDeleteProgram(shader);
 	camera->~Camera();

@@ -10,7 +10,8 @@
   running an OpenVR program.
 */
 
-#include <openvr/openvr.h>
+#include <openvr.h>
+#include <glm\glm.hpp>
 #include <string>
 
 #ifdef _WINDOWS
@@ -67,6 +68,42 @@ vr::IVRSystem* initOpenVR(uint32_t& hmdWidth, uint32_t& hmdHeight) {
     return hmd;
 }
 
+/*
+GLM to VR 3x4 matrix helper
+*/
+inline vr::HmdMatrix34_t toOpenVr(const glm::mat4& m) {
+	vr::HmdMatrix34_t result;
+	for (uint8_t i = 0; i < 3; ++i) {
+		for (uint8_t j = 0; j < 4; ++j) {
+			result.m[i][j] = m[j][i];
+		}
+	}
+	return result;
+}
+
+/*
+VR to GLM 3x4 matrix helper
+*/
+inline glm::mat4 toGlm(const vr::HmdMatrix34_t& m) {
+	glm::mat4 result = glm::mat4(
+		m.m[0][0], m.m[1][0], m.m[2][0], 0.0,
+		m.m[0][1], m.m[1][1], m.m[2][1], 0.0,
+		m.m[0][2], m.m[1][2], m.m[2][2], 0.0,
+		m.m[0][3], m.m[1][3], m.m[2][3], 1.0f);
+	return result;
+}
+
+/*
+VR to GLM 4x4 matrix helper
+*/
+inline glm::mat4 toGlmMat4(const vr::HmdMatrix44_t& m) {
+	glm::mat4 result = glm::mat4(
+		m.m[0][0], m.m[1][0], m.m[2][0], m.m[3][0],
+		m.m[0][1], m.m[1][1], m.m[2][1], m.m[3][1],
+		m.m[0][2], m.m[1][2], m.m[2][2], m.m[3][2],
+		m.m[0][3], m.m[1][3], m.m[2][3], m.m[3][3] );
+	return result;
+}
 
 /**
  */
@@ -75,13 +112,13 @@ void getEyeTransformations
     vr::TrackedDevicePose_t* trackedDevicePose,
     float           nearPlaneZ,
     float           farPlaneZ,
-    float*          headToWorldRowMajor3x4,
-    float*          ltEyeToHeadRowMajor3x4, 
-    float*          rtEyeToHeadRowMajor3x4,
-    float*          ltProjectionMatrixRowMajor4x4, 
-    float*          rtProjectionMatrixRowMajor4x4) {
+    glm::mat4*          headToWorld3x4,
+	glm::mat4*          ltEyeToHead3x4,
+	glm::mat4*          rtEyeToHead3x4,
+	glm::mat4*          ltProjectionMatrix4x4,
+	glm::mat4*          rtProjectionMatrix4x4) {
 
-    assert(nearPlaneZ < 0.0f && farPlaneZ < nearPlaneZ);
+    assert(nearPlaneZ > 0.0f && farPlaneZ > nearPlaneZ);
 
     vr::VRCompositor()->WaitGetPoses(trackedDevicePose, vr::k_unMaxTrackedDeviceCount, nullptr, 0);
 
@@ -99,15 +136,15 @@ void getEyeTransformations
                 case vr::TrackedDeviceClass_TrackingReference: fprintf(stderr, "   Reference: ["); break;
                 default:                                       fprintf(stderr, "   ???: ["); break;
 			    }
-                for (int r = 0; r < 3; ++r) { 
+                /*for (int r = 0; r < 3; ++r) { 
                     for (int c = 0; c < 4; ++c) {
                         fprintf(stderr, "%g, ", trackedDevicePose[d].mDeviceToAbsoluteTracking.m[r][c]);
                     }
                 }
-                fprintf(stderr, "]\n");
+                fprintf(stderr, "]\n");*/
 		    }
 	    }
-        fprintf(stderr, "\n");
+        //fprintf(stderr, "\n");
 #   endif
 
     assert(trackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid);
@@ -116,23 +153,31 @@ void getEyeTransformations
     const vr::HmdMatrix34_t& ltMatrix = hmd->GetEyeToHeadTransform(vr::Eye_Left);
     const vr::HmdMatrix34_t& rtMatrix = hmd->GetEyeToHeadTransform(vr::Eye_Right);
 
-    for (int r = 0; r < 3; ++r) {
-        for (int c = 0; c < 4; ++c) {
-            ltEyeToHeadRowMajor3x4[r * 4 + c] = ltMatrix.m[r][c];
-            rtEyeToHeadRowMajor3x4[r * 4 + c] = rtMatrix.m[r][c];
-            headToWorldRowMajor3x4[r * 4 + c] = head.m[r][c];
-        }
-    }
+	/*for (int r = 0; r < 3; ++r) {
+		for (int c = 0; c < 4; ++c) {
+			ltEyeToHead3x4[r * 4 + c] = ltMatrix.m[c][r];
+			rtEyeToHead3x4[r * 4 + c] = rtMatrix.m[c][r];
+			headToWorld3x4[r * 4 + c] = head.m[c][r];
+			printf("r: %d, c: %d, head.m[c][r]: %d", r, c, head.m[c][r]);
+			printf("\n");
+		}
+	}*/
+	*ltEyeToHead3x4 = toGlm(ltMatrix);
+	*rtEyeToHead3x4 = toGlm(rtMatrix);
+	*headToWorld3x4 = toGlm(head);
 
-    const vr::HmdMatrix44_t& ltProj = hmd->GetProjectionMatrix(vr::Eye_Left,  nearPlaneZ, farPlaneZ, vr::API_OpenGL);
-    const vr::HmdMatrix44_t& rtProj = hmd->GetProjectionMatrix(vr::Eye_Right, nearPlaneZ, farPlaneZ, vr::API_OpenGL);
+    const vr::HmdMatrix44_t& ltProj = hmd->GetProjectionMatrix(vr::Eye_Left,  nearPlaneZ, farPlaneZ);
+    const vr::HmdMatrix44_t& rtProj = hmd->GetProjectionMatrix(vr::Eye_Right, nearPlaneZ, farPlaneZ);
 
-    for (int r = 0; r < 4; ++r) {
-        for (int c = 0; c < 4; ++c) {
-            ltProjectionMatrixRowMajor4x4[r * 4 + c] = ltProj.m[r][c];
-            rtProjectionMatrixRowMajor4x4[r * 4 + c] = rtProj.m[r][c];
-        }
-    }
+	/*for (int r = 0; r < 4; ++r) {
+		for (int c = 0; c < 4; ++c) {
+			ltProjectionMatrix4x4[r * 4 + c] = ltProj.m[r][c];
+			rtProjectionMatrix4x4[r * 4 + c] = rtProj.m[r][c];
+		}
+	}*/
+
+	*ltProjectionMatrix4x4 = toGlmMat4(ltProj);
+	*rtProjectionMatrix4x4 = toGlmMat4(rtProj);
 }
 
 
@@ -140,10 +185,10 @@ void getEyeTransformations
 void submitToHMD(GLint ltEyeTexture, GLint rtEyeTexture, bool isGammaEncoded) {
     const vr::EColorSpace colorSpace = isGammaEncoded ? vr::ColorSpace_Gamma : vr::ColorSpace_Linear;
 
-    const vr::Texture_t lt = { reinterpret_cast<void*>(intptr_t(ltEyeTexture)), vr::API_OpenGL, colorSpace };
+    const vr::Texture_t lt = { reinterpret_cast<void*>(intptr_t(ltEyeTexture))};
     vr::VRCompositor()->Submit(vr::Eye_Left, &lt);
 
-    const vr::Texture_t rt = { reinterpret_cast<void*>(intptr_t(rtEyeTexture)), vr::API_OpenGL, colorSpace };
+    const vr::Texture_t rt = { reinterpret_cast<void*>(intptr_t(rtEyeTexture))};
     vr::VRCompositor()->Submit(vr::Eye_Right, &rt);
 
     // Tell the compositor to begin work immediately instead of waiting for the next WaitGetPoses() call

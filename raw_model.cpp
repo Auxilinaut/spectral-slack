@@ -30,13 +30,13 @@ _RawModel::~_RawModel() {
 void _RawModel::render(RawModelMaterial* material,
     glm::vec3 position, glm::vec3 size,
     glm::mat4 model_matrix, glm::mat4 transform_matrix,
-    unsigned int shader, glm::mat4* objectToWorldMatrix,  glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]) {
+    unsigned int shader, glm::mat4* objectToWorldMatrix,  glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLuint uniformBindingPoint, GLuint uniformBlock, GLint uniformOffset[]) {
     // Delegate to the generic render function.
     RawModelFactory::render(this->vao, this->index_count,
         material, position,
         glm::vec3(size.x / this->info->size.x, size.y / this->info->size.y,
         size.z / this->info->size.z),
-        model_matrix, transform_matrix, shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
+        model_matrix, transform_matrix, shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
 }
 
 // Instantiate all models.
@@ -74,13 +74,13 @@ void RawModelFactory::destructModelFactory() {
 void RawModelFactory::renderModel(int model_id, RawModelMaterial* material,
     glm::vec3 position, glm::vec3 size,
     glm::mat4 model_matrix, glm::mat4 transform_matrix,
-    unsigned int shader, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]) {
+    unsigned int shader, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLuint uniformBindingPoint, GLuint uniformBlock, GLint uniformOffset[]) {
     // Make sure the models are loaded first.
     RawModelFactory::instantiateModelFactory();
 
     // Render the model.
     RawModelFactory::models[model_id]->render(material, position, size,
-        model_matrix, transform_matrix, shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, ptr, uniformOffset);
+        model_matrix, transform_matrix, shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
 }
 
 // Render a generic model based on its Vertex Array Object.
@@ -88,13 +88,10 @@ void RawModelFactory::render(unsigned int vao, unsigned int index_count,
 	RawModelMaterial* material,
 	glm::vec3 position, glm::vec3 size,
 	glm::mat4 model_matrix, glm::mat4 transform_matrix,
-	unsigned int shader, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLubyte* ptr, GLint uniformOffset[]) {
+	unsigned int shader, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLuint uniformBindingPoint, GLuint uniformBlock, GLint uniformOffset[]) {
     
 	glm::mat4 scale_matrix, translation_matrix;
-	glm::vec3 camPos;
-	camPos.x = (*cameraToWorldMatrix)[3][0];
-	camPos.y = (*cameraToWorldMatrix)[3][1];
-	camPos.z = (*cameraToWorldMatrix)[3][2];
+	glm::vec3 camPos = glm::vec3((*cameraToWorldMatrix)[3]);
 
     // Send material data to the shader.
     glUniform1i(glGetUniformLocation(shader, "material_shininess"),
@@ -109,14 +106,18 @@ void RawModelFactory::render(unsigned int vao, unsigned int index_count,
         material->ks.r, material->ks.g, material->ks.b, material->ks.a);
 
     // Compute matrices for scaling and translation.
-    scale_matrix = glm::scale(glm::mat4(), glm::vec3(size.x, size.y, size.z));
+    scale_matrix = glm::scale(model_matrix, glm::vec3(size.x, size.y, size.z));
     translation_matrix = glm::translate(model_matrix, position);
 
     // Send model rendering info via uniform block to shader.
 
-	*objectToWorldMatrix = model_matrix * translation_matrix * transform_matrix *
-		scale_matrix;
+	*objectToWorldMatrix = model_matrix * translation_matrix * transform_matrix;
+	*objectToWorldNormalMatrix = glm::inverse(glm::transpose(glm::mat3(*objectToWorldMatrix)));
 	*modelViewProjectionMatrix = *projectionMatrix * glm::inverse(*cameraToWorldMatrix) * *objectToWorldMatrix;
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, uniformBindingPoint, uniformBlock);
+
+	GLubyte* ptr = (GLubyte*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
 
 	// mat3 is passed to openGL as if it was mat4 due to padding rules.
 	for (int row = 0; row < 3; ++row) {
@@ -128,6 +129,8 @@ void RawModelFactory::render(unsigned int vao, unsigned int index_count,
 	memcpy(ptr + uniformOffset[2], glm::value_ptr(*modelViewProjectionMatrix), sizeof(*modelViewProjectionMatrix));
 
 	memcpy(ptr + uniformOffset[3], glm::value_ptr(camPos), sizeof(glm::vec3));
+
+	glUnmapBuffer(GL_UNIFORM_BUFFER);
 
     // Bind VAO buffer and call draw the object.
     glBindVertexArray(vao);

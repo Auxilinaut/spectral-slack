@@ -98,7 +98,7 @@ float noise(vec2 position) {
         frequency = 0.01 * i;
         amplitude = 3.4 / i;
 
-        noise += snoise(position.xy * frequency) * amplitude;
+        noise += snoise(interpolated.position.xy * frequency) * amplitude;
     }
 
     return noise * 11; // We multiply the noise for a more pronounced effect.
