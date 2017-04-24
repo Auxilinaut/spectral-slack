@@ -112,11 +112,11 @@ void getEyeTransformations
     vr::TrackedDevicePose_t* trackedDevicePose,
     float           nearPlaneZ,
     float           farPlaneZ,
-    glm::mat4*          headToWorld3x4,
-	glm::mat4*          ltEyeToHead3x4,
-	glm::mat4*          rtEyeToHead3x4,
-	glm::mat4*          ltProjectionMatrix4x4,
-	glm::mat4*          rtProjectionMatrix4x4) {
+    float*          headToWorld3x4,
+	float*          ltEyeToHead3x4,
+	float*          rtEyeToHead3x4,
+	float*          ltProjectionMatrix4x4,
+	float*          rtProjectionMatrix4x4) {
 
     assert(nearPlaneZ > 0.0f && farPlaneZ > nearPlaneZ);
 
@@ -153,31 +153,32 @@ void getEyeTransformations
     const vr::HmdMatrix34_t& ltMatrix = hmd->GetEyeToHeadTransform(vr::Eye_Left);
     const vr::HmdMatrix34_t& rtMatrix = hmd->GetEyeToHeadTransform(vr::Eye_Right);
 
-	/*for (int r = 0; r < 3; ++r) {
+	for (int r = 0; r < 3; ++r) {
 		for (int c = 0; c < 4; ++c) {
-			ltEyeToHead3x4[r * 4 + c] = ltMatrix.m[c][r];
-			rtEyeToHead3x4[r * 4 + c] = rtMatrix.m[c][r];
-			headToWorld3x4[r * 4 + c] = head.m[c][r];
-			printf("r: %d, c: %d, head.m[c][r]: %d", r, c, head.m[c][r]);
-			printf("\n");
+			ltEyeToHead3x4[r * 4 + c] = ltMatrix.m[r][c];
+			rtEyeToHead3x4[r * 4 + c] = rtMatrix.m[r][c];
+			headToWorld3x4[r * 4 + c] = head.m[r][c];
+			/*printf("r: %d, c: %d, head.m[c][r]: %d", r, c, head.m[c][r]);
+			printf("\n");*/
 		}
-	}*/
-	*ltEyeToHead3x4 = toGlm(ltMatrix);
+	}
+
+	/**ltEyeToHead3x4 = toGlm(ltMatrix);
 	*rtEyeToHead3x4 = toGlm(rtMatrix);
-	*headToWorld3x4 = toGlm(head);
+	*headToWorld3x4 = toGlm(head);*/
 
     const vr::HmdMatrix44_t& ltProj = hmd->GetProjectionMatrix(vr::Eye_Left,  nearPlaneZ, farPlaneZ);
     const vr::HmdMatrix44_t& rtProj = hmd->GetProjectionMatrix(vr::Eye_Right, nearPlaneZ, farPlaneZ);
 
-	/*for (int r = 0; r < 4; ++r) {
+	for (int r = 0; r < 4; ++r) {
 		for (int c = 0; c < 4; ++c) {
 			ltProjectionMatrix4x4[r * 4 + c] = ltProj.m[r][c];
 			rtProjectionMatrix4x4[r * 4 + c] = rtProj.m[r][c];
 		}
-	}*/
+	}
 
-	*ltProjectionMatrix4x4 = toGlmMat4(ltProj);
-	*rtProjectionMatrix4x4 = toGlmMat4(rtProj);
+	/**ltProjectionMatrix4x4 = toGlmMat4(ltProj);
+	*rtProjectionMatrix4x4 = toGlmMat4(rtProj);*/
 }
 
 
@@ -185,10 +186,10 @@ void getEyeTransformations
 void submitToHMD(GLint ltEyeTexture, GLint rtEyeTexture, bool isGammaEncoded) {
     const vr::EColorSpace colorSpace = isGammaEncoded ? vr::ColorSpace_Gamma : vr::ColorSpace_Linear;
 
-    const vr::Texture_t lt = { reinterpret_cast<void*>(intptr_t(ltEyeTexture))};
+    const vr::Texture_t lt = { reinterpret_cast<void*>(intptr_t(ltEyeTexture)), vr::TextureType_OpenGL, colorSpace };
     vr::VRCompositor()->Submit(vr::Eye_Left, &lt);
 
-    const vr::Texture_t rt = { reinterpret_cast<void*>(intptr_t(rtEyeTexture))};
+    const vr::Texture_t rt = { reinterpret_cast<void*>(intptr_t(rtEyeTexture)), vr::TextureType_OpenGL, colorSpace };
     vr::VRCompositor()->Submit(vr::Eye_Right, &rt);
 
     // Tell the compositor to begin work immediately instead of waiting for the next WaitGetPoses() call

@@ -11,7 +11,7 @@
  */
 
 // Uncomment to add VR support
-//#define _VR
+#define _VR
 
 ////////////////////////////////////////////////////////////////////////////////
 #define GLM_FORCE_SWIZZLE
@@ -255,7 +255,7 @@ int main(const int argc, const char* argv[]) {
 
 
 #       ifdef _VR
-            getEyeTransformations(hmd, trackedDevicePose, nearPlaneZ, farPlaneZ, &glm::transpose(headToBodyMatrix), &glm::transpose(eyeToHead[0]), &glm::transpose(eyeToHead[1]), &glm::transpose(projectionMatrix[0]), &glm::transpose(projectionMatrix[1]));
+            getEyeTransformations(hmd, trackedDevicePose, nearPlaneZ, farPlaneZ, glm::value_ptr(headToBodyMatrix), glm::value_ptr(eyeToHead[0]), glm::value_ptr(eyeToHead[1]), glm::value_ptr(projectionMatrix[0]), glm::value_ptr(projectionMatrix[1]));
 #       else
 		projectionMatrix[0] = glm::perspective(verticalFieldOfView, float(framebufferWidth / framebufferHeight), nearPlaneZ, farPlaneZ);
 #       endif
@@ -291,12 +291,12 @@ int main(const int argc, const char* argv[]) {
 			//2nd shader sky drawer
 			drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(headToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
 
-			glUseProgram(shader);
-
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LESS);
 			glEnable(GL_CULL_FACE);
 			glDepthMask(GL_TRUE);
+
+			glUseProgram(shader);
 
 			// uniform colorTexture - sampler binding
 			const GLint colorTextureUnit = 0;
@@ -331,10 +331,11 @@ int main(const int argc, const char* argv[]) {
 
 #           ifdef _VR
             {
-                const vr::Texture_t tex = { reinterpret_cast<void*>(intptr_t(colorRenderTarget[eye])) };
+                const vr::Texture_t tex = { reinterpret_cast<void*>(intptr_t(colorRenderTarget[eye])), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
                 vr::VRCompositor()->Submit(vr::EVREye(eye), &tex);
             }
 #           endif
+			
         } // for each eye
 
         ////////////////////////////////////////////////////////////////////////
