@@ -46,7 +46,7 @@ namespace mesh{
 	// Load a file type Obj (without NURBS without materials)
 	// Returns the arguments submitted by reference id vao OpenGL (Vertex Array Object) for vbo (Vertex Buffer Object) and Ibo (Index Buffer Object)
 	void loadObj(const std::string &filename, unsigned int &vao, unsigned int& vbo, unsigned int &ibo, unsigned int &num_indices){
-		// Load and indexes the file vertecsii
+		// Load and indexes the file
         std::vector<VertexFormat> vertices;
         std::vector<unsigned int> indices;
         _loadObjFile(filename, vertices, indices);
@@ -60,7 +60,7 @@ namespace mesh{
         glGenVertexArrays(1, &gl_vertex_array_object);
         glBindVertexArray(gl_vertex_array_object);
 
-		// Vertex buffer object -> object to hold our vertecsii
+		// Vertex buffer object -> object to hold our vertices
         glGenBuffers(1, &gl_vertex_buffer_object);
         glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buffer_object);
         glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(VertexFormat), &vertices[0], GL_STATIC_DRAW);
@@ -70,13 +70,13 @@ namespace mesh{
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_index_buffer_object);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
-		// Link between attributes vertecsilor and pipeline, our data are interleaved.
+		// Link between attributes and pipeline; our data are interleaved.
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)0);						//pos pipe 0
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, sizeof(VertexFormat), (void*)0);						//pos pipe 0
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)(sizeof(float)* 3));		//normal pipe 1
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(VertexFormat), (void*)(sizeof(float)* 3));		//normal pipe 1
         glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)(2 * sizeof(float)* 3));	//texcoords pipe 2
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, sizeof(VertexFormat), (void*)(2 * sizeof(float)* 3));	//texcoords pipe 2
 
         vao = gl_vertex_array_object;
         vbo = gl_vertex_buffer_object;
@@ -126,7 +126,7 @@ namespace mesh{
         _stringTokenize(aux, tokens);
     }
 
-	// Load only geometry from a file obj (not loaded high order surfaces, materials, coordinated extra lines)
+	// Load only geometry from a file obj (not loaded: high order surfaces, materials, coordinated extra lines)
 	// Format: http://paulbourke.net/dataformats/obj/
 	// Calculate not normal or texture coordinates or tangent, but readable non-optimal performance (relative to other parsers ..)
 	// Consider geometry as a single object, so do not take into account or smoothing groups
@@ -164,17 +164,17 @@ namespace mesh{
 
             //if I have a face (f + minimum three indexes)
             if (tokens.size() >= 4 && tokens[0] == "f"){
-				// Use the first vertex of the face determines the format girl (v v/t v//n v/t/n) = (1 2 3 4)
+				// Use the first vertex of the face determine the format (v v/t v//n v/t/n) = (1 2 3 4)
                 unsigned int face_format = 0;
                 if (tokens[1].find("//") != std::string::npos) face_format = 3;
                 _faceTokenize(tokens[1], facetokens);
-                if (facetokens.size() == 3) face_format = 4; // vertecsi/texcoords/normal
+                if (facetokens.size() == 3) face_format = 4; // vertices/texcoords/normal
                 else{
                     if (facetokens.size() == 2){
                         if (face_format != 3) face_format = 2;
                     }
                     else{
-                        face_format = 1; //only vertecsi
+                        face_format = 1; //only vertices
                     }
                 }
 

@@ -45,7 +45,7 @@ namespace mesh{
     //variant for faces
     void _faceTokenize(const std::string &source, std::vector<std::string> &tokens);
 
-	// Load only geometry from a file obj (not loaded high order surfaces, materials, coordinated extra lines)
+	// Load only geometry from a file obj (not loaded: high order surfaces, materials, coordinated extra lines)
 	// Format: http://paulbourke.net/dataformats/obj/
 	// Calculate not normal or texture coordinates or tangent, but readable non-optimal performance (relative to other parsers ..)
 	// Consider geometry as a single object, so do not take into account or smoothing groups

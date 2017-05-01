@@ -15,8 +15,8 @@
 #include "texture_loader.h"
 
 // Fog constants.
-#define FOG_START_RADIUS 900.0f
-#define FOG_END_RADIUS 2100.0f
+#define FOG_START_RADIUS 1200.0f
+#define FOG_END_RADIUS 3000.0f
 #define FOG_COLOR glm::vec4(1, 0.996f, 0.549f, 1)
 
 // Types of lights.
@@ -57,7 +57,7 @@ static const float LIGHT_RANGE_SIZE = LIGHT_MAXIMUM_SIZE - LIGHT_MINIMUM_SIZE;
 #define LIGHT_SHININESS 100
 
 // Global ambiental color value.
-static const glm::vec4 LIGHT_AMBIENTAL = glm::vec4(0.05f, 0.05f, 0.05f, 1);
+static const glm::vec4 LIGHT_AMBIENTAL = glm::vec4(0, 0, 0, 1);
 
 // Maximum number of lights.
 #define LIGHT_MAXIMUM_COUNT 50

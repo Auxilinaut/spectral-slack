@@ -187,12 +187,11 @@ vec4 computeLight(vec3 position, vec3 V, vec4 color, float inner_angle,
 
             // Compute the specular component and return attenuated and reduced
             // color (reduced only if spotlight).
-            if (diffuseLight.x > 0 || diffuseLight.y > 0 || diffuseLight.z > 0) {
+            
                 specularLight = (material_ks * color *
                     pow(max(dot(interpolated.normal, H), 0), material_shininess));
 
                 return spot_falloff * attenuation * (diffuseLight + specularLight);
-            }
         }
     }
 
@@ -220,12 +219,11 @@ uniform vec4 color_top;
 uniform vec2 boundary_top;
 uniform vec4 color_bottom;
 uniform vec2 boundary_bottom;
-uniform float height_offset;
 
 // Compute current mountain color.
 vec4 computeMountainColor(vec3 position, vec4 original_color) {
     // Retrieve the current height and introduce the noise component.
-    float height = (position.y - height_offset) - noise(position.xz);
+    float height = position.y - noise(position.xz);
 
     // Calculate the percentage for the top color.
     float top_percentage = clamp(1 - (height - boundary_top.x) /
@@ -259,13 +257,12 @@ void main(){
         V = normalize(V);
 
         // If we're not drawing fog or the vertex is within fog radius.
-        if (!fog_switch || dist <= fog_end) {
 
             // Compute emisive and ambiental components.
             color = material_ke + material_ka * ambiental_light;
 
             // Compute basic object color with lighting from the sun.
-            color += computeLight(sun_position, V, sun_color, 0, 0, sun_size);
+            //color += computeLight(sun_position, V, sun_color, 0, 0, sun_size);
 
             // If we're drawing mountains, combine the color.
             if (draw_mountain) {
@@ -280,15 +277,14 @@ void main(){
             }
 
             // If we're drawing fog and the vertex is inside fog falloff.
-            if (fog_switch && dist >= fog_start) {
+            /*if (fog_switch && dist >= fog_start) {
                 // Compute fog value and mix fog values. The fog color is also
                 // mixed with background color, to achieve a transition between
                 // the sky and the fog.
                 float original_color = fog(dist);
                 vec4 fog_color = mix(background_color, fog_color, original_color);
                 color = mix(fog_color, color, original_color);
-            }
-        }
+            }*/
 
         pixelColor = color;
     }

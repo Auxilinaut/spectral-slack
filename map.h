@@ -35,7 +35,7 @@ static const float MAP_FRACTAL_Y_OFFSET = -MAP_FRACTAL_DISPLACEMENT_RANGE * 0.5f
 #define MAP_INFINITY -2000.0f
 
 // How big a block is compared to the visible area around the camera.
-#define MAP_RADIUS_MULTIPLY 1.5f
+#define MAP_RADIUS_MULTIPLY 3.0f
 
 // Colors for the mountains.
 static const glm::vec4 MAP_TOP_COLOR = glm::vec4(0.95f, 0.95f, 0.95f, 1);

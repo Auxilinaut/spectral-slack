@@ -111,7 +111,7 @@ void Light::render(unsigned int shader, glm::vec3 offset,
 LightSystem::LightSystem(unsigned int type, Camera* camera)
 : Movable(glm::vec3(0, 0, 0), camera->forward, camera->right, camera->up) {
     this->type = type;
-    this->setRelativePosition(camera->position);
+    this->setRelativePosition(camera->position + glm::vec3(0,5.0f,0));
     this->light_count = 0;
     this->fog = true;
 
@@ -189,7 +189,7 @@ void LightSystem::setRelativePosition(glm::vec3 position) {
 // Move the light system on the intended path. The system is actually rendered
 // based on the relative position.
 void LightSystem::move(float time, float angle_y) {
-    glm::vec3 movement = Movable::move(time, glm::vec2(0, 0));
+    glm::vec3 movement = Movable::move(time/15.0f, glm::vec2(0, 0));
 
     // Move all the lights.
     for (int i = 0; i < this->light_count; i++) {
@@ -207,7 +207,7 @@ void LightSystem::render(unsigned int shader, glm::mat4 model_matrix, glm::mat4*
     glm::vec3 offset = this->relative_position;
 
     // First render the sun's model and light.
-    this->sun->render(shader, model_matrix, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
+    //this->sun->render(shader, model_matrix, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
 
     // Turn the fog on or off and send fog variables.
     glUniform1i(glGetUniformLocation(shader, "fog_switch"), this->fog);

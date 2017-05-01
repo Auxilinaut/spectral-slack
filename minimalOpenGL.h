@@ -156,10 +156,7 @@ GLuint createShaderProgram(const std::string& vertexShaderSource, const std::str
 }
 
 
-/** Submits a full-screen quad at the far plane and runs a procedural sky shader on it.
-
-    \param light Light vector, must be normalized 
- */
+/* Submits a full-screen quad at the far plane and runs a procedural sky shader on it.*/
 void drawSky(int windowWidth, int windowHeight, const float* cameraToWorldMatrix, const float* projectionMatrixInverse, const float* light) {
 #   define VERTEX_SHADER(s) "#version 410\n" #s
 #   define PIXEL_SHADER(s) VERTEX_SHADER(s)

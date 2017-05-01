@@ -11,7 +11,7 @@
  */
 
 // Uncomment to add VR support
-#define _VR
+//#define _VR
 
 ////////////////////////////////////////////////////////////////////////////////
 #define GLM_FORCE_SWIZZLE
@@ -116,8 +116,8 @@ int main(const int argc, const char* argv[]) {
 
 	Camera* camera = new Camera();
 
-	Map* map = new Map(camera->getPosition(), FOG_END_RADIUS, MAP_MODE_BASE);
-	map->setMode(MAP_MODE_FRACTAL);
+	Map* map = new Map(camera->getPosition(), FOG_END_RADIUS, MAP_MODE_FRACTAL);
+	//map->setMode();
 
 	LightSystem* light_system = new LightSystem(LIGHT_OMNI, camera);
 	//light_system->switchFog();
@@ -220,11 +220,11 @@ int main(const int argc, const char* argv[]) {
 	glm::mat4 projectionMatrix[numEyes] = { glm::mat4(1.0f) };
 	glm::mat4 headToBodyMatrix = glm::mat4(1.0f);
 	glm::mat4 model_matrix = glm::mat4(1.0f);
+	glm::mat4& cameraToWorldMatrix = glm::mat4(1.0f);
 
 	// STILL MAKING DECLARATIONS
 
 	glm::mat3& objectToWorldNormalMatrix = glm::mat3(1.0f);
-	glm::mat4& cameraToWorldMatrix = glm::mat4(1.0f);
 	glm::vec3& cameraPosition = glm::vec3(cameraToWorldMatrix[3]);
 	const float nearPlaneZ = 0.1f;
 	const float farPlaneZ = 10000.0f;
@@ -266,7 +266,6 @@ int main(const int argc, const char* argv[]) {
 		cameraPosition = glm::vec3(headToWorldMatrix[3]);
 		model_matrix = glm::mat4(1.0f);
 		modelViewProjectionMatrix = glm::mat4(1.0f);
-		//objectToWorldNormalMatrix = glm::inverse(glm::transpose(glm::mat3(objectToWorldMatrix)));
 
 		bodyToWorldMatrix = //view
             glm::translate(bodyToWorldMatrix, bodyTranslation) *
@@ -289,7 +288,7 @@ int main(const int argc, const char* argv[]) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			//2nd shader sky drawer
-			drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(headToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
+			//drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(headToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
 
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LESS);
@@ -386,15 +385,22 @@ int main(const int argc, const char* argv[]) {
         if ((GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE)) || (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Z))) { bodyTranslation.y += cameraMoveSpeed; }
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_G)) { wireframe = !wireframe; }
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_F)) { light_system->switchFog(); }
+
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_I)) { light_system->setControl(MOVABLE_CONTROL_FORWARD); }
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_J)) { light_system->setControl(MOVABLE_CONTROL_LEFT); }
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_K)) { light_system->setControl(MOVABLE_CONTROL_BACKWARD); }
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_L)) { light_system->setControl(MOVABLE_CONTROL_RIGHT); }
         
 		// Keep the camera above the ground
         //if (bodyTranslation.y < 0.01f) { bodyTranslation.y = 0.01f; }
 
         static bool inDrag = false;
         const float cameraTurnSpeed = 0.005f;
+		static double startX, startY;
+		double currentX, currentY;
+
         if (GLFW_PRESS == glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
-            static double startX, startY;
-            double currentX, currentY;
+            
 
             glfwGetCursorPos(window, &currentX, &currentY);
             if (inDrag) {
@@ -407,7 +413,7 @@ int main(const int argc, const char* argv[]) {
         }
 
 		camera->position = cameraPosition;
-
+		light_system->move(glfwGetTime()-previous_time, 0.0f);
     }
 	
 #   ifdef _VR

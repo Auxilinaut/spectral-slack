@@ -9,7 +9,7 @@
 #include "glm\glm.hpp"
 #include "glm\gtx\rotate_vector.hpp"
 
-#define MOVABLE_MOVE_SPEED 150
+#define MOVABLE_MOVE_SPEED 100
 
 // Axes identifiers
 #define MOVABLE_X_AXIS 0
