@@ -155,30 +155,28 @@ void getEyeTransformations
 
 	for (int r = 0; r < 3; ++r) {
 		for (int c = 0; c < 4; ++c) {
-			ltEyeToHead3x4[r * 4 + c] = ltMatrix.m[r][c];
-			rtEyeToHead3x4[r * 4 + c] = rtMatrix.m[r][c];
-			headToWorld3x4[r * 4 + c] = head.m[r][c];
-			/*printf("r: %d, c: %d, head.m[c][r]: %d", r, c, head.m[c][r]);
-			printf("\n");*/
+			ltEyeToHead3x4[c * 4 + r] = ltMatrix.m[r][c];
+			rtEyeToHead3x4[c * 4 + r] = rtMatrix.m[r][c];
+			headToWorld3x4[c * 4 + r] = head.m[r][c];
 		}
 	}
-
-	/**ltEyeToHead3x4 = toGlm(ltMatrix);
-	*rtEyeToHead3x4 = toGlm(rtMatrix);
-	*headToWorld3x4 = toGlm(head);*/
+	/*
+	*ltEyeToHead3x4 = (float&)toGlm(ltMatrix);
+	*rtEyeToHead3x4 = (float&)toGlm(rtMatrix);
+	*headToWorld3x4 = (float&)toGlm(head);*/
 
     const vr::HmdMatrix44_t& ltProj = hmd->GetProjectionMatrix(vr::Eye_Left,  nearPlaneZ, farPlaneZ);
     const vr::HmdMatrix44_t& rtProj = hmd->GetProjectionMatrix(vr::Eye_Right, nearPlaneZ, farPlaneZ);
 
 	for (int r = 0; r < 4; ++r) {
 		for (int c = 0; c < 4; ++c) {
-			ltProjectionMatrix4x4[r * 4 + c] = ltProj.m[r][c];
-			rtProjectionMatrix4x4[r * 4 + c] = rtProj.m[r][c];
+			ltProjectionMatrix4x4[c * 4 + r] = ltProj.m[r][c];
+			rtProjectionMatrix4x4[c * 4 + r] = rtProj.m[r][c];
 		}
 	}
-
-	/**ltProjectionMatrix4x4 = toGlmMat4(ltProj);
-	*rtProjectionMatrix4x4 = toGlmMat4(rtProj);*/
+	/*
+	*ltProjectionMatrix4x4 = (float&)toGlmMat4(ltProj);
+	*rtProjectionMatrix4x4 = (float&)toGlmMat4(rtProj);*/
 }
 
 

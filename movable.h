@@ -49,6 +49,8 @@ public:
 
     glm::vec3 move(float time, glm::vec2 angles);
 
+	glm::vec3 moveToward(float time, glm::vec3 pos, glm::vec3 toward, float speed);
+
     void translateX(float distance);
     void translateY(float distance);
     void translateZ(float distance);

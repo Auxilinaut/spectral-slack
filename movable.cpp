@@ -59,6 +59,12 @@ glm::vec3 Movable::move(float time, glm::vec2 angles) {
     return this->position - previous_position;
 }
 
+glm::vec3 Movable::moveToward(float time, glm::vec3 pos, glm::vec3 toward, float speed) {
+	glm::vec3 direction = toward - pos;
+	direction = glm::normalize(direction);
+	return pos + (direction * speed);
+}
+
 // Translate entity forward, up or right.
 void Movable::translateX(float distance){
     this->position += this->forward * distance;

@@ -7,68 +7,6 @@
 
 #include "light_system.h"
 
-// Sun constructor. Loads the texture and initializes the vectors.
-Sun::Sun(Camera* camera)
-:Movable(SUN_POSITION, glm::vec3(), glm::vec3(), glm::vec3()) {
-	this->camera = camera;
-
-    this->texture = texture::loadTextureBMP("resources\\sun.bmp");
-}
-
-// Deconstructor.
-Sun::~Sun() {
-    glDeleteBuffers(1, &(this->texture));
-}
-
-// Render the sun. The sun is composed of a plane with a texture applied to it.
-// For realism, it is always facing the the camera.
-// The sun is also placed always at a fixed position, relative to the camera,
-// so it always stays away enough from the camera.
-void Sun::render(unsigned int shader, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLuint uniformBindingPoint, GLuint uniformBlock, GLint uniformOffset[]) {
-    // Update the sun's position.
-    glm::vec3 sun_position = this->position +
-        glm::vec3(this->camera->position.x, 0, 0);
-
-    // Compute the sun vectors such that it faces the camera.
-    this->forward = glm::normalize(this->camera->position - sun_position);
-    this->right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), this->forward));
-    this->up = glm::normalize(glm::cross(this->forward, this->right));
-
-    // Build the rotation matrix based on previous calculated vectors.
-    glm::mat4 rotation_matrix;
-    rotation_matrix[0] = glm::vec4(this->right, 0);
-    rotation_matrix[1] = glm::vec4(this->up, 0);
-    rotation_matrix[2] = glm::vec4(this->forward, 0);
-
-    // Send sun information to the shader.
-    glUniform1i(glGetUniformLocation(shader, "draw_sun"), true);
-
-    glUniform3f(glGetUniformLocation(shader, "sun_position"),
-        sun_position.x, sun_position.y, sun_position.z);
-    glUniform4f(glGetUniformLocation(shader, "sun_color"),
-        SUN_COLOR.r, SUN_COLOR.g, SUN_COLOR.b, SUN_COLOR.a);
-    glUniform1f(glGetUniformLocation(shader, "sun_size"), SUN_SIZE);
-
-    // We're no longer drawing fog for the sun plane, to ensure realism.
-    glUniform1i(glGetUniformLocation(shader, "fog_switch"), false);
-
-	
-    // Send texture data to the shader.
-    glActiveTexture(GL_TEXTURE0 + 4);
-    glBindTexture(GL_TEXTURE_2D, this->texture);
-    glUniform1i(glGetUniformLocation(shader, "colorTexture"), 4);
-
-    // Render the basic plane.
-    RawModelFactory::renderModel(RAW_MODEL_PLANE,
-        (RawModelMaterial*)&SUN_MATERIAL,
-        sun_position,
-        glm::vec3(SUN_SIZE, SUN_SIZE, 1),
-        model_matrix, rotation_matrix, shader, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
-
-    // Notify the shader we're no longer rendering the sun plane.
-    glUniform1i(glGetUniformLocation(shader, "draw_sun"), false);
-}
-
 // Instantiate a simple light, with its variables.
 Light::Light(unsigned int type, glm::vec3 position, RawModelMaterial* material,
     float size) {
@@ -86,6 +24,10 @@ void Light::setType(unsigned int type) { this->type = type; }
 // Set a light's position.
 void Light::move(glm::vec3 movement) {
     this->position = this->position + movement;
+}
+
+void Light::moveToward(float time, glm::vec3 pos, glm::vec3 toward, float speed) {
+	this->position = Movable::moveToward(time, pos, toward, speed);
 }
 
 // Get a light's position.
@@ -117,25 +59,16 @@ LightSystem::LightSystem(unsigned int type, Camera* camera)
 
     // Initialize random seed.
     srand((unsigned int)time(NULL));
-
-    this->sun = new Sun(camera);
 }
 
 // Deconstructor.
 LightSystem::~LightSystem() {}
 
 // Adds a new light to the system.
-void LightSystem::addLight() {
+void LightSystem::addLight(glm::vec3 cameraPosition) {
     // Add a light only if there's still enough space.
     if (this->light_count < LIGHT_MAXIMUM_COUNT) {
-        // Compute the random position.
-        glm::vec3 position = this->position + glm::vec3(
-            (rand() % 100) / 100.0f *
-            LIGHT_MAXIMUM_RADIUS_2 - LIGHT_MAXIMUM_RADIUS,
-            (rand() % 100) / 100.0f *
-            LIGHT_MAXIMUM_HEIGHT_2 - LIGHT_MAXIMUM_HEIGHT,
-            (rand() % 100) / 100.0f *
-            LIGHT_MAXIMUM_RADIUS_2 - LIGHT_MAXIMUM_RADIUS);
+		glm::vec3 position = cameraPosition;
 
         // Compute the basic color.
         glm::vec4 color = glm::vec4(
@@ -157,7 +90,6 @@ void LightSystem::addLight() {
         RawModelMaterial* material = new RawModelMaterial(LIGHT_SHININESS,
             color * 1.2f, color, color, color * 1.4f);
 
-        // Instantiate the light objec.
         Light* new_light = new Light(this->type, position, material, size);
 
         // Assign the light variables, for later use.
@@ -186,17 +118,17 @@ void LightSystem::setRelativePosition(glm::vec3 position) {
     this->relative_position = position;
 }
 
-// Move the light system on the intended path. The system is actually rendered
-// based on the relative position.
-void LightSystem::move(float time, float angle_y) {
-    glm::vec3 movement = Movable::move(time/15.0f, glm::vec2(0, 0));
 
-    // Move all the lights.
+void LightSystem::move(float time, glm::vec3 camPos, float speed) {
+    glm::vec3 movement = Movable::move(time, glm::vec2(0, 0)); // Move the light system on the intended path. The system is actually rendered based on the relative position.
+
+    // Move all the lights when not close to player
     for (int i = 0; i < this->light_count; i++) {
+		if (glm::distance(camPos, this->lights[i]->getPosition()) >= 2.0f) {
+			this->lights[i]->moveToward(time, this->lights[i]->getPosition(), camPos, speed);
+		}
         this->lights[i]->move(movement);
     }
-
-    this->rotateY(angle_y);
 }
 
 // Switch the fog on and off.
@@ -206,27 +138,10 @@ void LightSystem::switchFog() { this->fog = !this->fog; }
 void LightSystem::render(unsigned int shader, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLuint uniformBindingPoint, GLuint uniformBlock, GLint uniformOffset[]) {
     glm::vec3 offset = this->relative_position;
 
-    // First render the sun's model and light.
-    //this->sun->render(shader, model_matrix, objectToWorldMatrix, projectionMatrix, cameraToWorldMatrix, modelViewProjectionMatrix, objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
-
     // Turn the fog on or off and send fog variables.
     glUniform1i(glGetUniformLocation(shader, "fog_switch"), this->fog);
-    glUniform1f(glGetUniformLocation(shader, "fog_start"), FOG_START_RADIUS);
-    glUniform1f(glGetUniformLocation(shader, "fog_end"), FOG_END_RADIUS);
-
-    glUniform4f(glGetUniformLocation(shader, "fog_color"),
-        FOG_COLOR.x, FOG_COLOR.y, FOG_COLOR.z, FOG_COLOR.a);
-
-    // Send ambiental light color.
-    glUniform4f(glGetUniformLocation(shader, "ambiental_light"),
-        LIGHT_AMBIENTAL.x, LIGHT_AMBIENTAL.y, LIGHT_AMBIENTAL.z,
-        LIGHT_AMBIENTAL.a);
-
-    // Send global light information.
-    glUniform1i(glGetUniformLocation(shader, "light_type"), this->type);
-    glUniform3f(glGetUniformLocation(shader, "spotlight_direction"),
-        LIGHT_SPOT_DIRECTION.x, LIGHT_SPOT_DIRECTION.y,
-        LIGHT_SPOT_DIRECTION.z);
+	glUniform1i(glGetUniformLocation(shader, "light_type"), this->type);
+    
 
     // Render all the individual light models.
     for (int i = 0; i < this->light_count; i++) {

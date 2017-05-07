@@ -60,28 +60,9 @@ static const float LIGHT_RANGE_SIZE = LIGHT_MAXIMUM_SIZE - LIGHT_MINIMUM_SIZE;
 static const glm::vec4 LIGHT_AMBIENTAL = glm::vec4(0, 0, 0, 1);
 
 // Maximum number of lights.
-#define LIGHT_MAXIMUM_COUNT 50
+#define LIGHT_MAXIMUM_COUNT 100
 
-// Sun constants.
-#define SUN_SIZE 1500.0f
-const static glm::vec4 SUN_COLOR = glm::vec4(0.988, 1, 0.678, 1);
-const static glm::vec3 SUN_POSITION = glm::vec3(-6000.0f, 800.0f, 0);
-static const RawModelMaterial SUN_MATERIAL = RawModelMaterial(
-    100, SUN_COLOR,
-    glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0));
-
-class Sun : public Movable {
-public:
-    Sun(Camera* camera);
-    ~Sun();
-
-    void render(unsigned int shader, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLuint uniformBindingPoint, GLuint uniformBlock, GLint uniformOffset[]);
-private:
-	Camera* camera;
-    unsigned int texture;
-};
-
-class Light {
+class Light : public Movable {
 public:
     Light(unsigned int type, glm::vec3 position, RawModelMaterial* material,
         float size);
@@ -89,6 +70,7 @@ public:
 
     void setType(unsigned int type);
     void move(glm::vec3 movement);
+	void moveToward(float time, glm::vec3 pos, glm::vec3 toward, float speed);
     void render(unsigned int shader, glm::vec3 offset, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLuint uniformBindingPoint, GLuint uniformBlock, GLint uniformOffset[]);
 
     glm::vec3 getPosition();
@@ -105,12 +87,12 @@ public:
     LightSystem(unsigned int type, Camera* camera);
     ~LightSystem();
 
-    void addLight();
+	void addLight(glm::vec3 camPos);
     void switchType();
     void setRelativePosition(glm::vec3 position);
     void switchFog();
 
-    void move(float time, float angle_y);
+    void move(float time, glm::vec3 camPos, float speed);
     void render(unsigned int shader, glm::mat4 model_matrix, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLuint uniformBindingPoint, GLuint uniformBlock, GLint uniformOffset[]);
 
 private:
@@ -123,6 +105,5 @@ private:
     float light_outer_angles[LIGHT_MAXIMUM_COUNT];
     int light_count;
     unsigned int type;
-    Sun* sun;
     bool fog;
 };

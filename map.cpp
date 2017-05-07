@@ -88,11 +88,6 @@ void Map::render(unsigned int shader, glm::mat4 model_matrix,
         // If we're drawing the fractal mountains, send color variables to the
         // shader.
         if (this->mode != MAP_MODE_BASE) {
-            glUniform4f(glGetUniformLocation(shader, "color_top"),
-                MAP_TOP_COLOR.r, MAP_TOP_COLOR.g, MAP_TOP_COLOR.b, MAP_TOP_COLOR.a);
-            glUniform4f(glGetUniformLocation(shader, "color_bottom"),
-                MAP_BOTTOM_COLOR.r, MAP_BOTTOM_COLOR.g, MAP_BOTTOM_COLOR.b,
-                MAP_BOTTOM_COLOR.a);
             glUniform2f(glGetUniformLocation(shader, "boundary_top"),
                 this->boundary_top.s, this->boundary_top.t);
             glUniform2f(glGetUniformLocation(shader, "boundary_bottom"),
@@ -489,11 +484,11 @@ void Map::bufferData() {
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, block->total_index_count *
                 sizeof(unsigned int), block->indexes, GL_STATIC_DRAW);
 
-            glEnableVertexAttribArray(0);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, sizeof(MapVertex),
+            glEnableVertexAttribArray(6);
+            glVertexAttribPointer(6, 3, GL_FLOAT, GL_TRUE, sizeof(MapVertex),
                 (void*)0);
-            glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(MapVertex),
+            glEnableVertexAttribArray(7);
+            glVertexAttribPointer(7, 3, GL_FLOAT, GL_TRUE, sizeof(MapVertex),
                 (void*)(3 * sizeof(float)));
 
             free(block->vertices);

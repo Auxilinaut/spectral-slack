@@ -71,12 +71,12 @@ namespace mesh{
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
 		// Link between attributes and pipeline; our data are interleaved.
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, sizeof(VertexFormat), (void*)0);						//pos pipe 0
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(VertexFormat), (void*)(sizeof(float)* 3));		//normal pipe 1
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, sizeof(VertexFormat), (void*)(2 * sizeof(float)* 3));	//texcoords pipe 2
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 3, GL_FLOAT, GL_TRUE, sizeof(VertexFormat), (void*)0);						//pos pipe 0
+        glEnableVertexAttribArray(7);
+        glVertexAttribPointer(7, 3, GL_FLOAT, GL_TRUE, sizeof(VertexFormat), (void*)(sizeof(float)* 3));		//normal pipe 1
+        glEnableVertexAttribArray(8);
+        glVertexAttribPointer(8, 2, GL_FLOAT, GL_TRUE, sizeof(VertexFormat), (void*)(2 * sizeof(float)* 3));	//texcoords pipe 2
 
         vao = gl_vertex_array_object;
         vbo = gl_vertex_buffer_object;

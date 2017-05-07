@@ -13,37 +13,39 @@ namespace texture{
 
     unsigned int loadTextureBMP(const std::string &filename){
         unsigned int width, height;
-        unsigned char* data = _loadBMPFile(filename, width, height);
+		unsigned char* data = _loadBMPFile(filename, width, height);
+		
+		//Free OpenGL texture
+		unsigned int gl_texture_object = 10;/*
+		glGenTextures(1, &gl_texture_object);
+		glBindTexture(GL_TEXTURE_2D, gl_texture_object);
 
-        //Free OpenGL texture
-        unsigned int gl_texture_object;
-        glGenTextures(1, &gl_texture_object);
-        glBindTexture(GL_TEXTURE_2D, gl_texture_object);
+		//filtration
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-        //filtration
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        /*glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        float maxAnisotropy;
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);*/
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+		float maxAnisotropy;
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
 
 		// Textures when working with multiple non-sized 4 rows reader must
 		// load the textures in OpenGL that working memory aligned to 1 (default is 4)
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-        //generates texture
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		//generates texture
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
-        //destroy array of RAM
-        delete data;
+		//destroy array of RAM
+		delete data;
 
 		// Create hierarchy mipmapuri
-        glGenerateMipmap(GL_TEXTURE_2D);
+		glGenerateMipmap(GL_TEXTURE_2D);
 
-        //returns the object texture
-        return gl_texture_object;
+		//returns the object texture
+		*/return gl_texture_object;
     }
 
 	// Does not support compression!

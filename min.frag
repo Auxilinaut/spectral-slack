@@ -247,10 +247,6 @@ void main(){
     vec4 color = background_color;
 
     // If we're drawing the sun, apply texture.
-    if (draw_sun) {
-        vec3 tex = texture(colorTexture, interpolated.texCoord).xyz;
-        pixelColor = vec4(tex, 1);
-    } else {
         // Compute distance in XZ plane only.
         float dist = distance(object.cameraPosition.xz, interpolated.position.xz);
 
@@ -287,7 +283,6 @@ void main(){
             }*/
 
         pixelColor = color;
-    }
 }
 
 

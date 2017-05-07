@@ -38,21 +38,20 @@ GLFWwindow* window = nullptr;
     vr::IVRSystem* hmd = nullptr;
 #endif
 
-#define BACKGROUND_COLOR glm::vec4(0.886f, 0.941f, 0.953f, 1)
+#define BACKGROUND_COLOR glm::vec4(0.0f, 0.0f, 0.0f, 1)
 
 // Get time from last frame.
-void getTime(int *previous_time, float *time) {
-	int time_interval;
-	int current_time;
+void getTime(float *previous_time, float *deltaTime, float *time) {
+	double current_time;
 
 	current_time = glfwGetTime();
-	time_interval = current_time - *previous_time;
+	*deltaTime = current_time - *previous_time;
 	*previous_time = current_time;
-	*time = (float)time_interval / 1000.0f;
+	*time = (float)(*deltaTime) / 1000.0f;
 }
 
 int main(const int argc, const char* argv[]) {
-    std::cout << "Minimal OpenGL 4.1 Example by Morgan McGuire\n\nW, A, S, D, C, Z keys to translate\nMouse click and drag to rotate\nESC to quit\n\n";
+    std::cout << "Spectral Slack\n\nW, A, S, D, Space, and C keys to translate\nMouse click and drag to rotate\nESC to quit\n\n";
     std::cout << std::fixed;
 
     uint32_t framebufferWidth = 1280, framebufferHeight = 720;
@@ -90,6 +89,7 @@ int main(const int argc, const char* argv[]) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, framebufferWidth, framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		assert(glGetError() == GL_NONE);
 
         glBindTexture(GL_TEXTURE_2D, depthRenderTarget[eye]);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -97,10 +97,12 @@ int main(const int argc, const char* argv[]) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, framebufferWidth, framebufferHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
+		assert(glGetError() == GL_NONE);
 
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer[eye]);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorRenderTarget[eye], 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_TEXTURE_2D, depthRenderTarget[eye], 0);
+		assert(glGetError() == GL_NONE);
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -123,7 +125,8 @@ int main(const int argc, const char* argv[]) {
 	//light_system->switchFog();
 
 	float time;
-	int previous_time = glfwGetTime();
+	float previous_time = glfwGetTime();
+	float deltaTime;
 
     //////////////////////////////////////////////////////////////////////
     // Create the main shader
@@ -136,7 +139,7 @@ int main(const int argc, const char* argv[]) {
     const GLint colorTextureUniform = glGetUniformLocation(shader, "colorTexture");
 
     const GLuint uniformBlockIndex = glGetUniformBlockIndex(shader, "Uniform");
-    const GLuint uniformBindingPoint = 1;
+    const GLuint uniformBindingPoint = 6;
     glUniformBlockBinding(shader, uniformBlockIndex, uniformBindingPoint);
 
     GLuint uniformBlock;
@@ -149,6 +152,8 @@ int main(const int argc, const char* argv[]) {
         glBindBuffer(GL_UNIFORM_BUFFER, uniformBlock);
         glBufferData(GL_UNIFORM_BUFFER, uniformBlockSize, nullptr, GL_DYNAMIC_DRAW);
     }
+
+	assert(glGetError() == GL_NONE);
 
     const GLchar* uniformName[] = {
         "Uniform.objectToWorldNormalMatrix",
@@ -176,11 +181,13 @@ int main(const int argc, const char* argv[]) {
     GLuint uniformIndex[numBlockUniforms];
     glGetUniformIndices(shader, numBlockUniforms, uniformName, uniformIndex);
     assert(uniformIndex[0] < 10000);
+	assert(glGetError() == GL_NONE);
 
     // Map indices to byte offsets
     GLint  uniformOffset[numBlockUniforms];
     glGetActiveUniformsiv(shader, numBlockUniforms, uniformIndex, GL_UNIFORM_OFFSET, uniformOffset);
     assert(uniformOffset[0] >= 0);
+	assert(glGetError() == GL_NONE);
 
     // Load a texture map
     GLuint colorTexture = GL_NONE;
@@ -194,6 +201,7 @@ int main(const int argc, const char* argv[]) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, textureWidth, textureHeight, 0, (channels == 3) ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
         glGenerateMipmap(GL_TEXTURE_2D);
     }
+	assert(glGetError() == GL_NONE);
 
     GLuint trilinearSampler = GL_NONE;
     {
@@ -203,6 +211,7 @@ int main(const int argc, const char* argv[]) {
         glSamplerParameteri(trilinearSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glSamplerParameteri(trilinearSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
+	assert(glGetError() == GL_NONE);
 
 #   ifdef _VR
         vr::TrackedDevicePose_t trackedDevicePose[vr::k_unMaxTrackedDeviceCount];
@@ -227,9 +236,38 @@ int main(const int argc, const char* argv[]) {
 	glm::mat3& objectToWorldNormalMatrix = glm::mat3(1.0f);
 	glm::vec3& cameraPosition = glm::vec3(cameraToWorldMatrix[3]);
 	const float nearPlaneZ = 0.1f;
-	const float farPlaneZ = 10000.0f;
+	const float farPlaneZ = 15000.0f;
 	const float verticalFieldOfView = glm::radians(45.0f);
-	const glm::vec3& light = glm::normalize(glm::vec3(1.0f, 0.5f, 0.2f));
+
+	glUseProgram(shader);
+
+	//send static shader globals
+
+	glUniform4f(glGetUniformLocation(shader, "background_color"),
+		BACKGROUND_COLOR.r, BACKGROUND_COLOR.g, BACKGROUND_COLOR.b,
+		BACKGROUND_COLOR.a);
+
+	glUniform4f(glGetUniformLocation(shader, "color_top"),
+		MAP_TOP_COLOR.r, MAP_TOP_COLOR.g, MAP_TOP_COLOR.b, MAP_TOP_COLOR.a);
+	glUniform4f(glGetUniformLocation(shader, "color_bottom"),
+		MAP_BOTTOM_COLOR.r, MAP_BOTTOM_COLOR.g, MAP_BOTTOM_COLOR.b,
+		MAP_BOTTOM_COLOR.a);
+
+	glUniform1f(glGetUniformLocation(shader, "fog_start"), FOG_START_RADIUS);
+	glUniform1f(glGetUniformLocation(shader, "fog_end"), FOG_END_RADIUS);
+
+	glUniform4f(glGetUniformLocation(shader, "fog_color"),
+		FOG_COLOR.x, FOG_COLOR.y, FOG_COLOR.z, FOG_COLOR.a);
+
+	// Send ambiental light color.
+	glUniform4f(glGetUniformLocation(shader, "ambiental_light"),
+		LIGHT_AMBIENTAL.x, LIGHT_AMBIENTAL.y, LIGHT_AMBIENTAL.z,
+		LIGHT_AMBIENTAL.a);
+
+	// Send global light information.
+	glUniform3f(glGetUniformLocation(shader, "spotlight_direction"),
+		LIGHT_SPOT_DIRECTION.x, LIGHT_SPOT_DIRECTION.y,
+		LIGHT_SPOT_DIRECTION.z);
 	
 	/////////////////////////////////////////////////////////////////////
     // Main loop
@@ -241,7 +279,7 @@ int main(const int argc, const char* argv[]) {
     while (! glfwWindowShouldClose(window)) {
         assert(glGetError() == GL_NONE);
 		
-		getTime(&previous_time, &time); //WHAT YEAR IS IT
+		getTime(&previous_time, &deltaTime, &time); //WHAT YEAR IS IT
 		frameTimes[totalFrames++%100] = time;
 		if (totalFrames == 100) {
 			averageFrame = 0;
@@ -260,10 +298,8 @@ int main(const int argc, const char* argv[]) {
 		projectionMatrix[0] = glm::perspective(verticalFieldOfView, float(framebufferWidth / framebufferHeight), nearPlaneZ, farPlaneZ);
 #       endif
 
-        // printf("float nearPlaneZ = %f, farPlaneZ = %f; int width = %d, height = %d;\n", nearPlaneZ, farPlaneZ, framebufferWidth, framebufferHeight);
-
 		
-		cameraPosition = glm::vec3(headToWorldMatrix[3]);
+		cameraPosition = glm::vec3(cameraToWorldMatrix[3]);
 		model_matrix = glm::mat4(1.0f);
 		modelViewProjectionMatrix = glm::mat4(1.0f);
 
@@ -279,7 +315,7 @@ int main(const int argc, const char* argv[]) {
             glBindFramebuffer(GL_FRAMEBUFFER, framebuffer[eye]);
             glViewport(0, 0, framebufferWidth, framebufferHeight);
 
-            glClearColor(0.1f, 0.2f, 0.3f, 0.0f);
+            //glClearColor(0.1f, 0.2f, 0.3f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			cameraToWorldMatrix = headToWorldMatrix * eyeToHead[eye];
@@ -288,8 +324,12 @@ int main(const int argc, const char* argv[]) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			//2nd shader sky drawer
-			//drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(headToWorldMatrix), glm::value_ptr(glm::inverse(projectionMatrix[eye])), &light.x);
-
+#       ifdef _VR
+			drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(glm::inverse(cameraToWorldMatrix)), glm::value_ptr(projectionMatrix[eye]));
+#		else
+			drawSky(framebufferWidth, framebufferHeight, glm::value_ptr(cameraToWorldMatrix), glm::value_ptr(projectionMatrix[eye]));
+#		endif
+			
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LESS);
 			glEnable(GL_CULL_FACE);
@@ -304,22 +344,15 @@ int main(const int argc, const char* argv[]) {
             glBindSampler(colorTextureUnit, trilinearSampler);
             glUniform1i(colorTextureUniform, colorTextureUnit);
 
-			// Send global variables.
-			glUniform4f(glGetUniformLocation(shader, "background_color"),
-				BACKGROUND_COLOR.r, BACKGROUND_COLOR.g, BACKGROUND_COLOR.b,
-				BACKGROUND_COLOR.a);
 			glUniform1i(glGetUniformLocation(shader, "lights_on"),
 				lights_on);
 
+			cameraPosition = glm::vec3(cameraToWorldMatrix[3]);
 
-
-            // ~~~~~~~~~~ Bind uniforms in the interface block, render terrain and lights ~~~~~~~~~~
-
-			cameraPosition = glm::vec3(headToWorldMatrix[3]);
+			//reset some matrices to prevent recursive transformations
 			model_matrix = glm::mat4(1.0f);
 			modelViewProjectionMatrix = glm::mat4(1.0f);
 			bodyToWorldMatrix = glm::mat4(1.0f);
-			headToWorldMatrix = glm::mat4(1.0f);
 			objectToWorldMatrix = glm::mat4(1.0f);
 
 			light_system->render(shader, model_matrix, &objectToWorldMatrix, &projectionMatrix[eye], &cameraToWorldMatrix, &modelViewProjectionMatrix, &objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
@@ -330,7 +363,7 @@ int main(const int argc, const char* argv[]) {
 
 #           ifdef _VR
             {
-                const vr::Texture_t tex = { reinterpret_cast<void*>(intptr_t(colorRenderTarget[eye])), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+                vr::Texture_t tex = { reinterpret_cast<void*>(intptr_t(colorRenderTarget[eye])), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
                 vr::VRCompositor()->Submit(vr::EVREye(eye), &tex);
             }
 #           endif
@@ -362,25 +395,25 @@ int main(const int argc, const char* argv[]) {
         }
 
         // WASD keyboard movement
-        const float cameraMoveSpeed = 5.0f;
+        const float cameraMoveSpeed = 500.0f * deltaTime;
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_W)) {
-			bodyTranslation += glm::vec3(cameraToWorldMatrix * glm::vec4(0, 0, -cameraMoveSpeed, 0));
+			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, -cameraMoveSpeed, 0));
 			//camera->setControl(MOVABLE_CONTROL_FORWARD);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_S)) { 
-			bodyTranslation += glm::vec3(cameraToWorldMatrix * glm::vec4(0, 0, +cameraMoveSpeed, 0));
+			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, +cameraMoveSpeed, 0));
 			//camera->setControl(MOVABLE_CONTROL_BACKWARD);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_A)) { 
-			bodyTranslation += glm::vec3(cameraToWorldMatrix * glm::vec4(-cameraMoveSpeed, 0, 0, 0));
+			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(-cameraMoveSpeed, 0, 0, 0));
 			//camera->setControl(MOVABLE_CONTROL_LEFT);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_D)) { 
-			bodyTranslation += glm::vec3(cameraToWorldMatrix * glm::vec4(+cameraMoveSpeed, 0, 0, 0));
+			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(+cameraMoveSpeed, 0, 0, 0));
 			//camera->setControl(MOVABLE_CONTROL_RIGHT);
 		}
         if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_C)) { bodyTranslation.y -= cameraMoveSpeed; }
-		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Q)) { light_system->addLight(); }
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Q)) { light_system->addLight(cameraPosition); }
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_E)) { light_system->switchType(); }
         if ((GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE)) || (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Z))) { bodyTranslation.y += cameraMoveSpeed; }
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_G)) { wireframe = !wireframe; }
@@ -413,7 +446,7 @@ int main(const int argc, const char* argv[]) {
         }
 
 		camera->position = cameraPosition;
-		light_system->move(glfwGetTime()-previous_time, 0.0f);
+		light_system->move(deltaTime, camera->position, cameraMoveSpeed / 5.0f);
     }
 	
 #   ifdef _VR

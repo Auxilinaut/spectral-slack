@@ -1,9 +1,9 @@
 #version 410 // -*- c++ -*-
 
 // Attributes
-layout(location=0) in vec3 position;
-layout(location=1) in vec3 normal;
-layout(location=2) in vec2 texCoord;
+layout(location=6) in vec3 position;
+layout(location=7) in vec3 normal;
+layout(location=8) in vec2 texCoord;
 
 // Interpolated outputs
 out Varying {
@@ -22,9 +22,8 @@ uniform Uniform {
 
 void main () {
     vertexOutput.texCoord   = texCoord;
-    // TODO objectToWorldNormalMatrix is not being passed correctly
     vertexOutput.normal     = normalize(object.objectToWorldNormalMatrix * normal);
-   vertexOutput.position   = position;
+	vertexOutput.position   = (object.objectToWorldMatrix * vec4(position, 1.0)).xyz;
 
     gl_Position = object.modelViewProjectionMatrix * vec4(position, 1.0);
 }
