@@ -1,7 +1,7 @@
 /**
 * Credit of original goes to Stamate Cosmin
 *
-* Description: Map generator.
+* Description: World generator.
 * The algorithm used in generation is the diamond square fractal generator:
 * http://www.gameprogrammer.com/fractal.html
 * http://www.bluh.org/code-the-diamond-square-algorithm/
@@ -9,55 +9,53 @@
 
 #pragma once
 
-#include "map.h"
+#include "world.h"
 
 // Initialize the random number seed.
 static std::random_device rd;
 static std::mt19937 rgn(rd());
 
 // Vertex initialization.
-MapVertex::MapVertex() {
+WorldVertex::WorldVertex() {
     this->position = glm::vec3(0, 0, 0);
     this->normal = glm::vec3(0, 0, 0);
 }
-MapVertex::MapVertex(glm::vec3 position) {
+WorldVertex::WorldVertex(glm::vec3 position) {
     this->position = position;
     this->normal = glm::vec3(0, 0, 0);
 }
-MapVertex::MapVertex(glm::vec3 position, glm::vec3 normal) {
+WorldVertex::WorldVertex(glm::vec3 position, glm::vec3 normal) {
     this->position = position;
     this->normal = normal;
 }
 
-// Instantiates the map, generates the terrains and binds all the buffers.
-Map::Map(glm::vec3 position, float radius, unsigned int mode) {
+// Instantiates the world, generates the terrains and binds all the buffers.
+World::World(glm::vec3 position, float radius, unsigned int mode) {
     // Cache various values.
-    this->radius = radius * MAP_RADIUS_MULTIPLY;
+    this->radius = radius * WORLD_RADIUS_MULTIPLY;
     this->length = this->radius * 2;
     this->position = position;
     this->setMode(mode);
     int i;
 
     // Initialize the mode blocks.
-    for (i = 0; i < MAP_MODE_COUNT; i++)
+    for (i = 0; i < WORLD_MODE_COUNT; i++)
         this->blocks[i] = NULL;
 
     // Generate every mode's block.
-    this->generateBase(MAP_MODE_BASE, MAP_SQUARE_COUNT);
-    this->generateTerrain(MAP_MODE_FRACTAL, MAP_SQUARE_COUNT);
-    this->tessellateTerrain(MAP_MODE_FRACTAL, MAP_MODE_FRACTAL_TESSELLATED_1X);
-    this->tessellateTerrain(MAP_MODE_FRACTAL_TESSELLATED_1X,
-        MAP_MODE_FRACTAL_TESSELLATED_2X);
-    this->tessellateTerrain(MAP_MODE_FRACTAL_TESSELLATED_2X,
-        MAP_MODE_FRACTAL_TESSELLATED_4X);
+    this->generateBase(WORLD_MODE_BASE, WORLD_SQUARE_COUNT);
+    this->generateTerrain(WORLD_MODE_FRACTAL, WORLD_SQUARE_COUNT);
+    //this->tessellateTerrain(WORLD_MODE_FRACTAL, WORLD_MODE_FRACTAL_TESSELLATED_1X);
+    //this->tessellateTerrain(WORLD_MODE_FRACTAL_TESSELLATED_1X,WORLD_MODE_FRACTAL_TESSELLATED_2X);
+    //this->tessellateTerrain(WORLD_MODE_FRACTAL_TESSELLATED_2X,WORLD_MODE_FRACTAL_TESSELLATED_4X);
 
     // Bind buffers and prepare for rendering.
     this->bufferData();
 }
 
 // Destructor.
-Map::~Map() {
-    for (int i = 0; i < MAP_MODE_COUNT; i++) {
+World::~World() {
+    for (int i = 0; i < WORLD_MODE_COUNT; i++) {
         glDeleteBuffers(1, &(this->blocks[i]->vao));
         glDeleteBuffers(1, &(this->blocks[i]->vbo));
         glDeleteBuffers(1, &(this->blocks[i]->ibo));
@@ -65,13 +63,13 @@ Map::~Map() {
 }
 
 // Set the current rendered mode.
-void Map::setMode(unsigned int mode) { this->mode = mode; }
+void World::setMode(unsigned int mode) { this->mode = mode; }
 
 // Render the block on the correct position around the camera.
 // We always render 4 blocks, that cover the fog radius completely.
-void Map::render(unsigned int shader, glm::mat4 model_matrix,
+void World::render(unsigned int shader, glm::mat4 model_matrix,
     glm::vec3 position, glm::mat4* objectToWorldMatrix, glm::mat4* projectionMatrix, glm::mat4* cameraToWorldMatrix, glm::mat4* modelViewProjectionMatrix, glm::mat3* objectToWorldNormalMatrix, GLuint uniformBindingPoint, GLuint uniformBlock, GLint uniformOffset[]) {
-    MapBlock* block = this->blocks[this->mode];
+    WorldBlock* block = this->blocks[this->mode];
     glm::vec3 direction = glm::vec3((*cameraToWorldMatrix)[3]);
 
     // The start point can be found by dividing the current distance from the
@@ -87,7 +85,7 @@ void Map::render(unsigned int shader, glm::mat4 model_matrix,
     if (block) {
         // If we're drawing the fractal mountains, send color variables to the
         // shader.
-        if (this->mode != MAP_MODE_BASE) {
+        if (this->mode != WORLD_MODE_BASE) {
             glUniform2f(glGetUniformLocation(shader, "boundary_top"),
                 this->boundary_top.s, this->boundary_top.t);
             glUniform2f(glGetUniformLocation(shader, "boundary_bottom"),
@@ -125,8 +123,8 @@ void Map::render(unsigned int shader, glm::mat4 model_matrix,
 }
 
 // Generate the base, flat terrain.
-void Map::generateBase(unsigned int mode, unsigned int square_count) {
-    MapBlock* block = this->initializeBlock(mode, square_count);
+void World::generateBase(unsigned int mode, unsigned int square_count) {
+    WorldBlock* block = this->initializeBlock(mode, square_count);
     unsigned int i;
 
     // All the vertices are initialized with Infinity height, fix that.
@@ -139,7 +137,7 @@ void Map::generateBase(unsigned int mode, unsigned int square_count) {
 }
 
 // Generate simple, non-tessellated fractal terrain.
-void Map::generateTerrain(unsigned int mode, unsigned int square_count) {
+void World::generateTerrain(unsigned int mode, unsigned int square_count) {
     // Calculate the number of iterations. The total square count is
     // 4 ^ iterations, so starting from the desired number of quads we can
     // determine how many iterations should we execute.
@@ -147,7 +145,7 @@ void Map::generateTerrain(unsigned int mode, unsigned int square_count) {
     int actual_square_count = (int)pow(2, iterations);
     float min = 0, max = 0, range;
 
-    MapBlock* block = this->initializeBlock(mode, actual_square_count);
+    WorldBlock* block = this->initializeBlock(mode, actual_square_count);
 
     // "Fractalize" the terrain.
     this->generateFractal(mode, iterations);
@@ -155,7 +153,7 @@ void Map::generateTerrain(unsigned int mode, unsigned int square_count) {
     // Go through the vertices and offset them, to correct the height.
     // We also find the minimun and maximum height generated.
     for (unsigned int i = 0; i < block->total_vertex_count; i++) {
-        block->vertices[i].position.y += MAP_FRACTAL_Y_OFFSET;
+        block->vertices[i].position.y += WORLD_FRACTAL_Y_OFFSET;
 
         if (block->vertices[i].position.y > max)
             max = block->vertices[i].position.y;
@@ -165,21 +163,20 @@ void Map::generateTerrain(unsigned int mode, unsigned int square_count) {
     range = max - min;
 
     // Compute the color boundaries for the mountains.
-    this->boundary_top = glm::vec2(min + range * MAP_BOUNDARY_TOP,
-        max * MAP_BOUNDARY_TOP_HIGH);
-    this->boundary_bottom = glm::vec2(min * (MAP_BOUNDARY_BOTTOM_LOW + 1),
-        min + range * MAP_BOUNDARY_BOTTOM);
+    this->boundary_top = glm::vec2(min + range * WORLD_BOUNDARY_TOP,
+        max * WORLD_BOUNDARY_TOP_HIGH);
+    this->boundary_bottom = glm::vec2(min * (WORLD_BOUNDARY_BOTTOM_LOW + 1),
+        min + range * WORLD_BOUNDARY_BOTTOM);
 
     // Compute normals.
     this->computeNormals(mode);
 }
 
-// To tessellate a generated block, we simply apply the fractal algorithm
-// once more, to multiply the number of quads by 4.
-void Map::tessellateTerrain(unsigned int source_mode, unsigned int mode) {
-    MapBlock* source_block = this->blocks[source_mode];
+// To tessellate a generated block, apply the fractal algorithm once more, to multiply the number of quads by 4.
+void World::tessellateTerrain(unsigned int source_mode, unsigned int mode) {
+    WorldBlock* source_block = this->blocks[source_mode];
     int square_count = source_block->square_count * 2;
-    MapBlock* block = this->initializeBlock(mode, square_count);
+    WorldBlock* block = this->initializeBlock(mode, square_count);
     unsigned int i, j;
 
     // Copy the height of already generated vertices in the source to
@@ -201,9 +198,9 @@ void Map::tessellateTerrain(unsigned int source_mode, unsigned int mode) {
 }
 
 // Generates a fractal.
-void Map::generateFractal(unsigned int mode, unsigned int iterations) {
+void World::generateFractal(unsigned int mode, unsigned int iterations) {
     float sum;
-    MapBlock* block = this->blocks[mode];
+    WorldBlock* block = this->blocks[mode];
     unsigned int vertex_count = block->vertex_count;
     unsigned int vertex_limit = block->square_count;
     unsigned int i, j, k, halfstep, count, index;
@@ -212,15 +209,15 @@ void Map::generateFractal(unsigned int mode, unsigned int iterations) {
     // The total number of iterations, according to the vertex count.
     int total_iterations = (int)log2(block->vertex_count);
     int iteration_diff = total_iterations - iterations;
-    float displacement_range = MAP_FRACTAL_DISPLACEMENT_RANGE /
+    float displacement_range = WORLD_FRACTAL_DISPLACEMENT_RANGE /
         (float)pow(2, iteration_diff);
 
     // Initialize the random floating point numbers generator.
     std::uniform_real_distribution<> fractal_seed(
-        MAP_FRACTAL_DISPLACEMENT_RANGE / 4.0f, MAP_FRACTAL_DISPLACEMENT_RANGE);
+        WORLD_FRACTAL_DISPLACEMENT_RANGE / 4.0f, WORLD_FRACTAL_DISPLACEMENT_RANGE);
 
-    // Initialize the map corners, if they are not already.
-    if (block->vertices[0].position.y == MAP_INFINITY) {
+    // Initialize the world corners, if they are not already.
+    if (block->vertices[0].position.y == WORLD_INFINITY) {
         block->vertices[0].position.y =
             block->vertices[vertex_limit].position.y =
             block->vertices[vertex_limit * vertex_count].position.y =
@@ -245,7 +242,7 @@ void Map::generateFractal(unsigned int mode, unsigned int iterations) {
                 index = i * vertex_count + j;
 
                 // Only compute this value if the vertex is not initialized.
-                if (block->vertices[index].position.y == MAP_INFINITY) {
+                if (block->vertices[index].position.y == WORLD_INFINITY) {
                     sum = 0;
 
                     // Sum the corner values and average.
@@ -270,12 +267,12 @@ void Map::generateFractal(unsigned int mode, unsigned int iterations) {
                 index = i * vertex_count + j;
 
                 // Initialize the vertex only if it is required.
-                if (block->vertices[index].position.y == MAP_INFINITY &&
+                if (block->vertices[index].position.y == WORLD_INFINITY &&
                     (i + j) % step != 0) {
                     sum = 0;
                     count = 0;
 
-                    // To ensure our map is wrapping, for vertices on the
+                    // To ensure our world is wrapping, for vertices on the
                     // block margin we also consider the vertex on the other
                     // side, in computations. Again, more information in the
                     // link provided.
@@ -336,9 +333,9 @@ void Map::generateFractal(unsigned int mode, unsigned int iterations) {
 
 // Initializing a block also computes all necessarry values and creates
 // the indexes list.
-MapBlock* Map::initializeBlock(unsigned int mode,
+WorldBlock* World::initializeBlock(unsigned int mode,
     unsigned int square_count) {
-    MapBlock* block = new MapBlock();
+    WorldBlock* block = new WorldBlock();
     unsigned int i, j, k, l, m, n;
 
     this->blocks[mode] = block;
@@ -353,7 +350,7 @@ MapBlock* Map::initializeBlock(unsigned int mode,
     block->total_index_count = block->total_triangle_count * 3;
 
     // Initialize lists for vertices and indexes.
-    block->vertices = (MapVertex*)malloc(sizeof(MapVertex)*
+    block->vertices = (WorldVertex*)malloc(sizeof(WorldVertex)*
         block->total_vertex_count);
     block->indexes = (unsigned int*)malloc(sizeof(unsigned int)*
         block->total_index_count);
@@ -384,8 +381,8 @@ MapBlock* Map::initializeBlock(unsigned int mode,
             }
 
             // Instantiate the current vertex.
-            block->vertices[k] = MapVertex(glm::vec3(i * block->square_size,
-                MAP_INFINITY, j * block->square_size));
+            block->vertices[k] = WorldVertex(glm::vec3(i * block->square_size,
+                WORLD_INFINITY, j * block->square_size));
         }
     }
 
@@ -394,10 +391,10 @@ MapBlock* Map::initializeBlock(unsigned int mode,
 
 // To compute vertex normals, we first compute triangle normals and then
 // average those for each vertex.
-void Map::computeNormals(unsigned int mode) {
+void World::computeNormals(unsigned int mode) {
     unsigned int i, j, k, l, m, n;
-    MapBlock* block = this->blocks[mode];
-    MapVertex *p1, *p2, *p3;
+    WorldBlock* block = this->blocks[mode];
+    WorldVertex *p1, *p2, *p3;
     glm::vec3 v1, v2;
     glm::vec3 normal;
 
@@ -461,13 +458,18 @@ void Map::computeNormals(unsigned int mode) {
     }
 }
 
+glm::vec3 World::getBlockPos(glm::vec3 pos)
+{
+	return glm::vec3();
+}
+
 // Binds the buffers for later rendering.
-void Map::bufferData() {
-    MapBlock* block;
+void World::bufferData() {
+    WorldBlock* block;
     unsigned int i;
 
-    // Bind buffers for each map mode.
-    for (i = 0; i < MAP_MODE_COUNT; i++) {
+    // Bind buffers for each world mode.
+    for (i = 0; i < WORLD_MODE_COUNT; i++) {
         block = this->blocks[i];
 
         if (block) {
@@ -477,7 +479,7 @@ void Map::bufferData() {
             glGenBuffers(1, &(block->vbo));
             glBindBuffer(GL_ARRAY_BUFFER, block->vbo);
             glBufferData(GL_ARRAY_BUFFER, block->total_vertex_count *
-                sizeof(MapVertex), block->vertices, GL_STATIC_DRAW);
+                sizeof(WorldVertex), block->vertices, GL_STATIC_DRAW);
 
             glGenBuffers(1, &(block->ibo));
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, block->ibo);
@@ -485,10 +487,10 @@ void Map::bufferData() {
                 sizeof(unsigned int), block->indexes, GL_STATIC_DRAW);
 
             glEnableVertexAttribArray(6);
-            glVertexAttribPointer(6, 3, GL_FLOAT, GL_TRUE, sizeof(MapVertex),
+            glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(WorldVertex),
                 (void*)0);
             glEnableVertexAttribArray(7);
-            glVertexAttribPointer(7, 3, GL_FLOAT, GL_TRUE, sizeof(MapVertex),
+			glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE , sizeof(WorldVertex),
                 (void*)(3 * sizeof(float)));
 
             free(block->vertices);

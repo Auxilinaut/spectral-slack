@@ -1,8 +1,7 @@
 /**
 * Credit of original goes to Stamate Cosmin
 *
-* Description: Light ensemble system, controlling all the light sources and
-* the main light source, the sun.
+* Description: Light ensemble system, controlling all light sources.
 */
 
 #include "light_system.h"
@@ -27,7 +26,7 @@ void Light::move(glm::vec3 movement) {
 }
 
 void Light::moveToward(float time, glm::vec3 pos, glm::vec3 toward, float speed) {
-	this->position = Movable::moveToward(time, pos, toward, speed);
+	this->position = Entity::moveToward(time, pos, toward, speed);
 }
 
 // Get a light's position.
@@ -51,11 +50,12 @@ void Light::render(unsigned int shader, glm::vec3 offset,
 
 // Assign variables, initialize the simple random number generator from C++.
 LightSystem::LightSystem(unsigned int type, Camera* camera)
-: Movable(glm::vec3(0, 0, 0), camera->forward, camera->right, camera->up) {
+: Entity(glm::vec3(0, 0, 0), camera->forward, camera->right, camera->up) {
     this->type = type;
     this->setRelativePosition(camera->position + glm::vec3(0,5.0f,0));
     this->light_count = 0;
     this->fog = true;
+	this->canMove = true;
 
     // Initialize random seed.
     srand((unsigned int)time(NULL));
@@ -113,6 +113,11 @@ void LightSystem::switchType() {
     }
 }
 
+void LightSystem::switchCanMove() {
+	this->canMove = !this->canMove;
+	printf("canMove: " + this->canMove);
+}
+
 // Update the system's relative position.
 void LightSystem::setRelativePosition(glm::vec3 position) {
     this->relative_position = position;
@@ -120,15 +125,18 @@ void LightSystem::setRelativePosition(glm::vec3 position) {
 
 
 void LightSystem::move(float time, glm::vec3 camPos, float speed) {
-    glm::vec3 movement = Movable::move(time, glm::vec2(0, 0)); // Move the light system on the intended path. The system is actually rendered based on the relative position.
-
-    // Move all the lights when not close to player
-    for (int i = 0; i < this->light_count; i++) {
-		if (glm::distance(camPos, this->lights[i]->getPosition()) >= 2.0f) {
-			this->lights[i]->moveToward(time, this->lights[i]->getPosition(), camPos, speed);
+	if (this->canMove) {
+		//glm::vec3 movement = Entity::move(time, glm::vec2(0, 0)); // Move the light system on the intended path. The system is actually rendered based on the relative position.
+		glm::vec3 offset = glm::vec3(0, -400.0f, -300.0f);
+	
+		// Move all the lights when not close to player
+		for (int i = 0; i < this->light_count; i++) {
+			if (glm::distance(camPos + offset, this->lights[i]->getPosition()) <= 1500.0f) {
+				this->lights[i]->moveToward(time, this->lights[i]->getPosition(), camPos + offset, speed);
+			}
+			//this->lights[i]->move(movement);
 		}
-        this->lights[i]->move(movement);
-    }
+	}
 }
 
 // Switch the fog on and off.

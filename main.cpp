@@ -14,6 +14,7 @@
 //#define _VR
 
 ////////////////////////////////////////////////////////////////////////////////
+
 #define GLM_FORCE_SWIZZLE
 
 #include <glm/glm.hpp>
@@ -25,8 +26,8 @@
 #include "mesh_loader.h"
 #include "raw_model.h"
 #include "light_system.h"
-#include "movable.h"
-#include "map.h"
+#include "entity.h"
+#include "world.h"
 
 #ifdef _VR
 #   include "minimalOpenVR.h"
@@ -40,19 +41,21 @@ GLFWwindow* window = nullptr;
 
 #define BACKGROUND_COLOR glm::vec4(0.0f, 0.0f, 0.0f, 1)
 
-// Get time from last frame.
-void getTime(float *previous_time, float *deltaTime, float *time) {
-	double current_time;
+int keys[1024] = { 0 }; //0 = init, 1 = pressed, 2 = released
 
-	current_time = glfwGetTime();
-	*deltaTime = current_time - *previous_time;
-	*previous_time = current_time;
-	*time = (float)(*deltaTime) / 1000.0f;
-}
+
+// PROTOTYPES
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void getTime(float *previous_time, float *deltaTime, float *time);
+void reloadShader(GLuint *shader);
 
 int main(const int argc, const char* argv[]) {
+
     std::cout << "Spectral Slack\n\nW, A, S, D, Space, and C keys to translate\nMouse click and drag to rotate\nESC to quit\n\n";
     std::cout << std::fixed;
+
+	//////////////////////////////////////////////////////////////////////
+	// Instantiate values
 
     uint32_t framebufferWidth = 1280, framebufferHeight = 720;
 #   ifdef _VR
@@ -67,47 +70,10 @@ int main(const int argc, const char* argv[]) {
     const int windowWidth = (framebufferWidth * windowHeight) / framebufferHeight;
 
     window = initOpenGL(windowWidth, windowHeight, "minimalOpenGL");
+	glfwSetKeyCallback(window, key_callback);
         
     glm::vec3 bodyTranslation = glm::vec3();
     glm::vec3 bodyRotation;
-
-    //////////////////////////////////////////////////////////////////////
-    // Allocate the frame buffer. This code allocates one framebuffer per eye.
-    // That requires more GPU memory, but is useful when performing temporal 
-    // filtering or making render calls that can target both simultaneously.
-
-    GLuint framebuffer[numEyes];
-    glGenFramebuffers(numEyes, framebuffer);
-
-    GLuint colorRenderTarget[numEyes], depthRenderTarget[numEyes];
-    glGenTextures(numEyes, colorRenderTarget);
-    glGenTextures(numEyes, depthRenderTarget);
-    for (int eye = 0; eye < numEyes; ++eye) {
-        glBindTexture(GL_TEXTURE_2D, colorRenderTarget[eye]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, framebufferWidth, framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-		assert(glGetError() == GL_NONE);
-
-        glBindTexture(GL_TEXTURE_2D, depthRenderTarget[eye]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, framebufferWidth, framebufferHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
-		assert(glGetError() == GL_NONE);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer[eye]);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorRenderTarget[eye], 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_TEXTURE_2D, depthRenderTarget[eye], 0);
-		assert(glGetError() == GL_NONE);
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	//////////////////////////////////////////////////////////////////////
-	// Instantiate values
 
 	RawModelFactory::instantiateModelFactory();
 	
@@ -118,8 +84,8 @@ int main(const int argc, const char* argv[]) {
 
 	Camera* camera = new Camera();
 
-	Map* map = new Map(camera->getPosition(), FOG_END_RADIUS, MAP_MODE_FRACTAL);
-	//map->setMode();
+	World* world = new World(glm::vec3(), MOUNTAIN_JAG, WORLD_MODE_FRACTAL);
+	//world->setMode();
 
 	LightSystem* light_system = new LightSystem(LIGHT_OMNI, camera);
 	//light_system->switchFog();
@@ -128,9 +94,44 @@ int main(const int argc, const char* argv[]) {
 	float previous_time = glfwGetTime();
 	float deltaTime;
 
+	//////////////////////////////////////////////////////////////////////
+	// Allocate the frame buffer. This code allocates one framebuffer per eye.
+	// That requires more GPU memory, but is useful when performing temporal 
+	// filtering or making render calls that can target both simultaneously.
+
+	GLuint framebuffer[numEyes];
+	glGenFramebuffers(numEyes, framebuffer);
+
+	GLuint colorRenderTarget[numEyes], depthRenderTarget[numEyes];
+	glGenTextures(numEyes, colorRenderTarget);
+	glGenTextures(numEyes, depthRenderTarget);
+	for (int eye = 0; eye < numEyes; ++eye) {
+		glBindTexture(GL_TEXTURE_2D, colorRenderTarget[eye]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, framebufferWidth, framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		assert(glGetError() == GL_NONE);
+
+		glBindTexture(GL_TEXTURE_2D, depthRenderTarget[eye]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, framebufferWidth, framebufferHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
+		assert(glGetError() == GL_NONE);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer[eye]);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorRenderTarget[eye], 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthRenderTarget[eye], 0);
+		assert(glGetError() == GL_NONE);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     //////////////////////////////////////////////////////////////////////
     // Create the main shader
-    const GLuint shader = createShaderProgram(loadTextFile("min.vert"), loadTextFile("min.frag"));
+    GLuint shader = createShaderProgram(loadTextFile("min.vert"), loadTextFile("min.frag"));
 
     // Binding points for attributes and uniforms discovered from the shader
     const GLint positionAttribute   = glGetAttribLocation(shader,  "position");
@@ -177,13 +178,13 @@ int main(const int argc, const char* argv[]) {
     }
 #   endif
 
-    // Map uniform names to indices within the block
+    // World uniform names to indices within the block
     GLuint uniformIndex[numBlockUniforms];
     glGetUniformIndices(shader, numBlockUniforms, uniformName, uniformIndex);
     assert(uniformIndex[0] < 10000);
 	assert(glGetError() == GL_NONE);
 
-    // Map indices to byte offsets
+    // World indices to byte offsets
     GLint  uniformOffset[numBlockUniforms];
     glGetActiveUniformsiv(shader, numBlockUniforms, uniformIndex, GL_UNIFORM_OFFSET, uniformOffset);
     assert(uniformOffset[0] >= 0);
@@ -217,6 +218,8 @@ int main(const int argc, const char* argv[]) {
         vr::TrackedDevicePose_t trackedDevicePose[vr::k_unMaxTrackedDeviceCount];
 #   endif
 
+	//glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
+
 	const float pi = glm::pi<float>();
 
 	// MATRIX 4X4 DELARATIONS
@@ -241,30 +244,27 @@ int main(const int argc, const char* argv[]) {
 
 	glUseProgram(shader);
 
-	//send static shader globals
-
 	glUniform4f(glGetUniformLocation(shader, "background_color"),
 		BACKGROUND_COLOR.r, BACKGROUND_COLOR.g, BACKGROUND_COLOR.b,
 		BACKGROUND_COLOR.a);
 
+	//send top and bottom world color thresholds
 	glUniform4f(glGetUniformLocation(shader, "color_top"),
-		MAP_TOP_COLOR.r, MAP_TOP_COLOR.g, MAP_TOP_COLOR.b, MAP_TOP_COLOR.a);
+		WORLD_TOP_COLOR.r, WORLD_TOP_COLOR.g, WORLD_TOP_COLOR.b, WORLD_TOP_COLOR.a);
 	glUniform4f(glGetUniformLocation(shader, "color_bottom"),
-		MAP_BOTTOM_COLOR.r, MAP_BOTTOM_COLOR.g, MAP_BOTTOM_COLOR.b,
-		MAP_BOTTOM_COLOR.a);
+		WORLD_BOTTOM_COLOR.r, WORLD_BOTTOM_COLOR.g, WORLD_BOTTOM_COLOR.b,
+		WORLD_BOTTOM_COLOR.a);
 
+	//send fog information
 	glUniform1f(glGetUniformLocation(shader, "fog_start"), FOG_START_RADIUS);
 	glUniform1f(glGetUniformLocation(shader, "fog_end"), FOG_END_RADIUS);
-
 	glUniform4f(glGetUniformLocation(shader, "fog_color"),
 		FOG_COLOR.x, FOG_COLOR.y, FOG_COLOR.z, FOG_COLOR.a);
 
-	// Send ambiental light color.
 	glUniform4f(glGetUniformLocation(shader, "ambiental_light"),
 		LIGHT_AMBIENTAL.x, LIGHT_AMBIENTAL.y, LIGHT_AMBIENTAL.z,
 		LIGHT_AMBIENTAL.a);
 
-	// Send global light information.
 	glUniform3f(glGetUniformLocation(shader, "spotlight_direction"),
 		LIGHT_SPOT_DIRECTION.x, LIGHT_SPOT_DIRECTION.y,
 		LIGHT_SPOT_DIRECTION.z);
@@ -320,7 +320,7 @@ int main(const int argc, const char* argv[]) {
 
 			cameraToWorldMatrix = headToWorldMatrix * eyeToHead[eye];
 
-			// Set drawing mode to fill, for other elements than the map.
+			// Set drawing mode to fill, for other elements than the world
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			//2nd shader sky drawer
@@ -357,9 +357,9 @@ int main(const int argc, const char* argv[]) {
 
 			light_system->render(shader, model_matrix, &objectToWorldMatrix, &projectionMatrix[eye], &cameraToWorldMatrix, &modelViewProjectionMatrix, &objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
 
-			// Draw the map
+			// Draw the world
 			glPolygonMode(GL_FRONT_AND_BACK, (wireframe ? GL_LINE : GL_FILL));
-			map->render(shader, model_matrix, cameraPosition, &objectToWorldMatrix, &projectionMatrix[eye], &cameraToWorldMatrix, &modelViewProjectionMatrix, &objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
+			world->render(shader, model_matrix, cameraPosition, &objectToWorldMatrix, &projectionMatrix[eye], &cameraToWorldMatrix, &modelViewProjectionMatrix, &objectToWorldNormalMatrix, uniformBindingPoint, uniformBlock, uniformOffset);
 
 #           ifdef _VR
             {
@@ -390,42 +390,52 @@ int main(const int argc, const char* argv[]) {
         glfwPollEvents();
 
         // Handle events
-        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_ESCAPE)) {
-            glfwSetWindowShouldClose(window, 1);
-        }
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+			glfwSetWindowShouldClose(window, 1);
+		}
+		// WASD keyboard movement
+		const float cameraMoveSpeed = 500.0f * deltaTime;
 
-        // WASD keyboard movement
-        const float cameraMoveSpeed = 500.0f * deltaTime;
 		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_W)) {
 			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, -cameraMoveSpeed, 0));
-			//camera->setControl(MOVABLE_CONTROL_FORWARD);
 		}
-        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_S)) { 
-			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, +cameraMoveSpeed, 0));
-			//camera->setControl(MOVABLE_CONTROL_BACKWARD);
-		}
-        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_A)) { 
-			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(-cameraMoveSpeed, 0, 0, 0));
-			//camera->setControl(MOVABLE_CONTROL_LEFT);
-		}
-        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_D)) { 
-			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(+cameraMoveSpeed, 0, 0, 0));
-			//camera->setControl(MOVABLE_CONTROL_RIGHT);
-		}
-        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_C)) { bodyTranslation.y -= cameraMoveSpeed; }
-		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Q)) { light_system->addLight(cameraPosition); }
-		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_E)) { light_system->switchType(); }
-        if ((GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE)) || (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_Z))) { bodyTranslation.y += cameraMoveSpeed; }
-		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_G)) { wireframe = !wireframe; }
-		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_F)) { light_system->switchFog(); }
 
-		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_I)) { light_system->setControl(MOVABLE_CONTROL_FORWARD); }
-		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_J)) { light_system->setControl(MOVABLE_CONTROL_LEFT); }
-		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_K)) { light_system->setControl(MOVABLE_CONTROL_BACKWARD); }
-		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_L)) { light_system->setControl(MOVABLE_CONTROL_RIGHT); }
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_S)) {
+			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(0, 0, +cameraMoveSpeed, 0));
+		}
+
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_A)) {
+			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(-cameraMoveSpeed, 0, 0, 0));
+		}
+
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_D)) {
+			bodyTranslation += glm::vec3(headToWorldMatrix * glm::vec4(+cameraMoveSpeed, 0, 0, 0));
+		}
+
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE)) { bodyTranslation.y += cameraMoveSpeed; }
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_C)) { bodyTranslation.y -= cameraMoveSpeed; }
+
+		if (keys[GLFW_KEY_Q] == 1) { light_system->addLight(cameraPosition); }
+		if (keys[GLFW_KEY_E] == 1) { light_system->switchType(); }
+		if (keys[GLFW_KEY_G] == 1) { wireframe = !wireframe; }
+		if (keys[GLFW_KEY_F] == 1) { light_system->switchFog(); }
+		if (keys[GLFW_KEY_X] == 1) { reloadShader(&shader); }
+		if (keys[GLFW_KEY_T] == 1) { light_system->switchCanMove(); }
+
+		/*if (keys[GLFW_KEY_I] == 2) { light_system->setControl(ENTITY_CONTROL_FORWARD); }
+		else { light_system->unsetControl(ENTITY_CONTROL_FORWARD); }
+
+		if (keys[GLFW_KEY_J] == 2) { light_system->setControl(ENTITY_CONTROL_LEFT); }
+		else { light_system->unsetControl(ENTITY_CONTROL_LEFT); }
+
+		if (keys[GLFW_KEY_K] == 2) { light_system->setControl(ENTITY_CONTROL_BACKWARD); }
+		else { light_system->unsetControl(ENTITY_CONTROL_BACKWARD); }
+
+		if (keys[GLFW_KEY_L] == 2) { light_system->setControl(ENTITY_CONTROL_RIGHT); }
+		else { light_system->unsetControl(ENTITY_CONTROL_RIGHT); }*/
         
 		// Keep the camera above the ground
-        //if (bodyTranslation.y < 0.01f) { bodyTranslation.y = 0.01f; }
+        //if (bodyTranslation.y < world->) { bodyTranslation.y = 0.01f; }
 
         static bool inDrag = false;
         const float cameraTurnSpeed = 0.005f;
@@ -433,7 +443,6 @@ int main(const int argc, const char* argv[]) {
 		double currentX, currentY;
 
         if (GLFW_PRESS == glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
-            
 
             glfwGetCursorPos(window, &currentX, &currentY);
             if (inDrag) {
@@ -445,8 +454,15 @@ int main(const int argc, const char* argv[]) {
             inDrag = false;
         }
 
-		camera->position = cameraPosition;
-		light_system->move(deltaTime, camera->position, cameraMoveSpeed / 5.0f);
+		light_system->move(deltaTime, cameraPosition, cameraMoveSpeed / 2.0f);
+
+		//reset keys in use
+		keys[GLFW_KEY_Q] = 0;
+		keys[GLFW_KEY_E] = 0;
+		keys[GLFW_KEY_G] = 0;
+		keys[GLFW_KEY_F] = 0;
+		keys[GLFW_KEY_X] = 0;
+		keys[GLFW_KEY_T] = 0;
     }
 	
 #   ifdef _VR
@@ -459,13 +475,61 @@ int main(const int argc, const char* argv[]) {
 	glDeleteProgram(shader);
 	camera->~Camera();
 	light_system->~LightSystem();
-	map->~Map();
+	world->~World();
 	RawModelFactory::destructModelFactory();
 
     // Close the GL context and release all resources
     glfwTerminate();
 
     return 0;
+}
+
+// Get time from last frame
+void getTime(float *previous_time, float *deltaTime, float *time) {
+	double current_time;
+
+	current_time = glfwGetTime();
+	*deltaTime = current_time - *previous_time;
+	*previous_time = current_time;
+	*time = (float)(*deltaTime) / 1000.0f;
+}
+
+// Currently broken shader reloader
+void reloadShader(GLuint *shader) {
+	GLsizei shaderCount = 0;
+	GLuint shaders[] = { 0 };
+
+	glGetAttachedShaders(*shader, 1, &shaderCount, shaders);
+
+	for (int i = 0; i < shaderCount; i++) {
+		glDetachShader(*shader, shaders[i]);
+		glDeleteShader(shaders[i]);
+	}
+	glDeleteProgram(*shader);
+	*shader = createShaderProgram(loadTextFile("min.vert"), loadTextFile("min.frag"));
+	std::cout << "hello";
+}
+
+// Is called whenever a key is pressed/released via GLFW
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
+{
+	//cout << key << endl;
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, GL_TRUE);
+
+	if (key >= 0 && key < 1024)
+	{
+		if (action == GLFW_PRESS) {
+			if (keys[key] == 0)
+			keys[key] = 1;
+		}
+
+		if (action == GLFW_RELEASE) {
+			if (keys[key] == 1) {
+				keys[key] = 2;
+			}
+		}
+	}
 }
 
 #ifdef _WINDOWS

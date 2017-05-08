@@ -1,7 +1,7 @@
 /**
 * Credit of original goes to Stamate Cosmin
 *
-* Description: Movable entity on X, Y, Z axes.
+* Description: Entity on X, Y, Z axes.
 */
 
 #pragma once
@@ -9,40 +9,40 @@
 #include "glm\glm.hpp"
 #include "glm\gtx\rotate_vector.hpp"
 
-#define MOVABLE_MOVE_SPEED 100
+#define ENTITY_MOVE_SPEED 100
 
 // Axes identifiers
-#define MOVABLE_X_AXIS 0
-#define MOVABLE_Y_AXIS 1
-#define MOVABLE_Z_AXIS 2
+#define ENTITY_X_AXIS 0
+#define ENTITY_Y_AXIS 1
+#define ENTITY_Z_AXIS 2
 
-#define MOVABLE_AXIS_COUNT 3
+#define ENTITY_AXIS_COUNT 3
 
 // Control identifiers.
-#define MOVABLE_NO_CONTROL -1
-#define MOVABLE_CONTROL_FORWARD 0
-#define MOVABLE_CONTROL_BACKWARD 1
-#define MOVABLE_CONTROL_UP 2
-#define MOVABLE_CONTROL_DOWN 3
-#define MOVABLE_CONTROL_RIGHT 4
-#define MOVABLE_CONTROL_LEFT 5
+#define ENTITY_NO_CONTROL -1
+#define ENTITY_CONTROL_FORWARD 0
+#define ENTITY_CONTROL_BACKWARD 1
+#define ENTITY_CONTROL_UP 2
+#define ENTITY_CONTROL_DOWN 3
+#define ENTITY_CONTROL_RIGHT 4
+#define ENTITY_CONTROL_LEFT 5
 
 // Link control identifiers to axis identifiers.
-const int MOVABLE_CONTROL_AXIS[] = {
-    MOVABLE_X_AXIS, MOVABLE_X_AXIS,
-    MOVABLE_Y_AXIS, MOVABLE_Y_AXIS,
-    MOVABLE_Z_AXIS, MOVABLE_Z_AXIS
+const int ENTITY_CONTROL_AXIS[] = {
+    ENTITY_X_AXIS, ENTITY_X_AXIS,
+    ENTITY_Y_AXIS, ENTITY_Y_AXIS,
+    ENTITY_Z_AXIS, ENTITY_Z_AXIS
 };
 
 // Axis movement direction.
-const int MOVABLE_CONTROL_AXIS_DIRECTION[] = { 1, -1, 1, -1, 1, -1 };
+const int ENTITY_CONTROL_AXIS_DIRECTION[] = { 1, -1, 1, -1, 1, -1 };
 
-class Movable {
+class Entity {
 public:
-    Movable();
-    Movable(glm::vec3 position, glm::vec3 forward, glm::vec3 right,
+    Entity();
+    Entity(glm::vec3 position, glm::vec3 forward, glm::vec3 right,
         glm::vec3 up);
-    ~Movable();
+    ~Entity();
 
     void initialize(glm::vec3 position, glm::vec3 forward, glm::vec3 right,
         glm::vec3 up);
@@ -75,5 +75,5 @@ public:
     glm::vec3 right;
     glm::vec3 position;
     float z_angle;
-    int controls[MOVABLE_AXIS_COUNT];
+    int controls[ENTITY_AXIS_COUNT];
 };

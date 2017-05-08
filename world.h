@@ -1,7 +1,7 @@
 /**
 * Credit of original goes to Stamate Cosmin
 *
-* Description: Map generator.
+* Description: World generator.
 * The algorithm used in generation is the diamond square fractal generator:
 * http://www.gameprogrammer.com/fractal.html
 * http://www.bluh.org/code-the-diamond-square-algorithm/
@@ -15,37 +15,34 @@
 #include <math.h>
 #include <random>
 
-// Map modes.
-#define MAP_MODE_BASE 0
-#define MAP_MODE_FRACTAL 1
-#define MAP_MODE_FRACTAL_TESSELLATED_1X 2
-#define MAP_MODE_FRACTAL_TESSELLATED_2X 3
-#define MAP_MODE_FRACTAL_TESSELLATED_4X 4
+// World modes.
+#define WORLD_MODE_BASE 0
+#define WORLD_MODE_FRACTAL 1
 
-#define MAP_MODE_COUNT 5
+#define WORLD_MODE_COUNT 2
 
 // Number of squares on the side of a terrain block, for the base mode.
-#define MAP_SQUARE_COUNT 128
+#define WORLD_SQUARE_COUNT 256
 
 // The range in which the height is displaced for the fractal generation.
-#define MAP_FRACTAL_DISPLACEMENT_RANGE 900.0f
-static const float MAP_FRACTAL_Y_OFFSET = -MAP_FRACTAL_DISPLACEMENT_RANGE * 0.5f;
+#define WORLD_FRACTAL_DISPLACEMENT_RANGE 1200.0f
+static const float WORLD_FRACTAL_Y_OFFSET = -WORLD_FRACTAL_DISPLACEMENT_RANGE * 0.5f;
 
 // Infinity number to mark un-initialized vertices.
-#define MAP_INFINITY -2000.0f
+#define WORLD_INFINITY -2000.0f
 
 // How big a block is compared to the visible area around the camera.
-#define MAP_RADIUS_MULTIPLY 3.0f
+#define WORLD_RADIUS_MULTIPLY 3.0f
 
 // Colors for the mountains.
-static const glm::vec4 MAP_TOP_COLOR = glm::vec4(0.95f, 0.95f, 0.95f, 1);
-static const glm::vec4 MAP_BOTTOM_COLOR = glm::vec4(0.2f, 0.2f, 0.2f, 1);
+static const glm::vec4 WORLD_TOP_COLOR = glm::vec4(0.95f, 0.95f, 0.95f, 1);
+static const glm::vec4 WORLD_BOTTOM_COLOR = glm::vec4(0.1f, 0.1f, 0.1f, 1);
 
 // Boundary of the mountain colors, relative to the maximum / minimum height.
-#define MAP_BOUNDARY_TOP 0.53f
-#define MAP_BOUNDARY_TOP_HIGH 1.5f
-#define MAP_BOUNDARY_BOTTOM 0.9f
-#define MAP_BOUNDARY_BOTTOM_LOW 1.8f
+#define WORLD_BOUNDARY_TOP 0.53f
+#define WORLD_BOUNDARY_TOP_HIGH 1.5f
+#define WORLD_BOUNDARY_BOTTOM 0.9f
+#define WORLD_BOUNDARY_BOTTOM_LOW 1.8f
 
 // Materials used for the various modes.
 static const RawModelMaterial material_neutral = RawModelMaterial(50,
@@ -67,22 +64,22 @@ static const RawModelMaterial* materials[] = {
 };
 
 // A vertex structure, containing position and normal.
-struct MapVertex {
+struct WorldVertex {
     glm::vec3 position;
     glm::vec3 normal;
 
-    MapVertex();
-    MapVertex(glm::vec3 position);
-    MapVertex(glm::vec3 position, glm::vec3 normal);
+    WorldVertex();
+    WorldVertex(glm::vec3 position);
+    WorldVertex(glm::vec3 position, glm::vec3 normal);
 };
 
 // Block structure, containing the actual VBO information.
-struct MapBlock {
+struct WorldBlock {
     unsigned int vao;
     unsigned int vbo;
     unsigned int ibo;
 
-    MapVertex* vertices;
+    WorldVertex* vertices;
     unsigned int* indexes;
 
     unsigned int square_count;
@@ -95,10 +92,10 @@ struct MapBlock {
     float square_size;
 };
 
-class Map {
+class World {
 public:
-    Map(glm::vec3 position, float radius, unsigned int mode);
-    ~Map();
+    World(glm::vec3 position, float radius, unsigned int mode);
+    ~World();
 
     void setMode(unsigned int mode);
     void render(unsigned int shader, glm::mat4 model_matrix,
@@ -109,9 +106,11 @@ public:
     void tessellateTerrain(unsigned int source_mode, unsigned int mode);
 
     void generateFractal(unsigned int mode, unsigned int iteration);
-    MapBlock* initializeBlock(unsigned int mode, unsigned int square_count);
+    WorldBlock* initializeBlock(unsigned int mode, unsigned int square_count);
     void bufferData();
     void computeNormals(unsigned int mode);
+
+	glm::vec3 getBlockPos(glm::vec3 pos);
 
 private:
     int mode;
@@ -119,5 +118,5 @@ private:
     float length;
     float radius;
     glm::vec2 boundary_top, boundary_bottom;
-    MapBlock* blocks[MAP_MODE_COUNT];
+    WorldBlock* blocks[WORLD_MODE_COUNT];
 };

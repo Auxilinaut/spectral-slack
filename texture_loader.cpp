@@ -24,8 +24,8 @@ namespace texture{
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPWORLD_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPWORLD_LINEAR);
 
 		float maxAnisotropy;
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
@@ -41,8 +41,8 @@ namespace texture{
 		//destroy array of RAM
 		delete data;
 
-		// Create hierarchy mipmapuri
-		glGenerateMipmap(GL_TEXTURE_2D);
+		// Create hierarchy mipworlduri
+		glGenerateMipworld(GL_TEXTURE_2D);
 
 		//returns the object texture
 		*/return gl_texture_object;

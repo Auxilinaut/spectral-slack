@@ -22,8 +22,8 @@ uniform Uniform {
 
 void main () {
     vertexOutput.texCoord   = texCoord;
-    vertexOutput.normal     = normalize(object.objectToWorldNormalMatrix * normal);
-	vertexOutput.position   = (object.objectToWorldMatrix * vec4(position, 1.0)).xyz;
+    vertexOutput.normal     = normalize(mat3(object.objectToWorldMatrix) * normal);
+	vertexOutput.position   = position;
 
     gl_Position = object.modelViewProjectionMatrix * vec4(position, 1.0);
 }
